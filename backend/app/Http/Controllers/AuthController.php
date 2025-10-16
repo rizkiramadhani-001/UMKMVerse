@@ -33,14 +33,26 @@ class AuthController extends Controller
             'role' => $request->role, // Store the role
         ]);
 
-        // Generate a token
-        $token = $user->createToken('API Token')->plainTextToken;
+        // Use Auth::attempt() to log in the user immediately after registration
+        $credentials = [
+            'email' => $request->email,
+            'password' => $request->password
+        ];
 
-        return response()->json([
-            'message' => 'User registered successfully!',
-            'data' => $user,
-            'token' => $token,
-        ], 201);
+        // Attempt to log the user in
+        if (Auth::attempt($credentials)) {
+            // If login is successful, generate the token
+            $user = Auth::user();
+            $token = $user->createToken('API Token')->plainTextToken;
+
+            // Return only the token in the response
+            return response()->json([
+                'message' => 'User registered and logged in successfully!',
+                'token' => $token, // No user data in response
+            ], 201);
+        } else {
+            return response()->json(['error' => 'Unable to authenticate user after registration.'], 500);
+        }
     }
 
     public function login(Request $request)
@@ -67,7 +79,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login successful',
-            'token' => $token,
+            'token' => $token, // Only returning token
         ]);
     }
 }
