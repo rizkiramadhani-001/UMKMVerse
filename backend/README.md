@@ -1,4 +1,4 @@
-# Laravel API for Login and Registration with Role-Based Authentication
+# UMKMVerse API Documentation
 
 This is a simple Laravel API for user registration and login functionality, with support for role-based access control.
 
@@ -12,8 +12,8 @@ This is a simple Laravel API for user registration and login functionality, with
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/laravel-api-role-auth.git
-    cd laravel-api-role-auth
+    git clone https://github.com/rizkiramadhani-001/UMKMVerse/tree/backend/backend
+    cd UMKMVerse/backend
     ```
 
 2. Install dependencies:
