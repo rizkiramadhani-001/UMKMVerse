@@ -4,8 +4,8 @@ This is a simple Laravel API for user registration and login functionality, with
 
 ## Requirements
 
-- PHP >= 7.4
-- Laravel >= 8.x
+- PHP >= 7.4  
+- Laravel >= 8.x  
 - Composer
 
 ## Installation
@@ -40,8 +40,8 @@ This is a simple Laravel API for user registration and login functionality, with
 
 ### Register User
 
-- **URL**: `/api/register`
-- **Method**: `POST`
+- **URL**: `/api/register`  
+- **Method**: `POST`  
 - **Request Body**:
     ```json
     {
@@ -68,8 +68,8 @@ This is a simple Laravel API for user registration and login functionality, with
 
 ### Login User
 
-- **URL**: `/api/login`
-- **Method**: `POST`
+- **URL**: `/api/login`  
+- **Method**: `POST`  
 - **Request Body**:
     ```json
     {
@@ -85,18 +85,31 @@ This is a simple Laravel API for user registration and login functionality, with
     }
     ```
 
-### Admin-Only Route
+- **Authorization Header Example**:  
+    Once you receive your token, include it in the header for authenticated requests:
+    ```
+    Authorization: Bearer your-api-token
+    ```
 
-- **URL**: `/api/admin`
-- **Method**: `GET`
-- **Headers**: `Authorization: Bearer <token>`
+### Protected Route Example
+
+- **URL**: `/api/user`  
+- **Method**: `GET`  
+- **Headers**:  
+    ```
+    Authorization: Bearer your-api-token
+    ```
 - **Response**:
     ```json
     {
-      "message": "Admin area"
+      "id": 1,
+      "name": "John Doe",
+      "email": "johndoe@example.com",
+      "role": "user"
     }
     ```
 
 ## Conclusion
 
-This API allows you to register and authenticate users with role-based access control. You can use the token provided upon login to access protected routes based on the user's role.
+This API allows you to register and authenticate users with role-based access control.  
+After logging in, use the **Bearer token** in the `Authorization` header to access protected routes according to the user's role.
