@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('password');
 
             // Added role column for role-based access
-            $table->enum('role', ['user', 'admin'])->default('user');
+            $table->enum('role', ['user', 'admin', 'umkm', 'supplier', 'investor', 'distributor'])->default('user');
 
             $table->rememberToken();
             $table->timestamps();
