@@ -32,6 +32,6 @@ Route::get('/supplier/dashboard', function (Request $request) {
 
 
 //FileUpload
-Route::post('/umkm/videoUpload', [UMKMController::class, 'fileUpload']);
+Route::post('/umkm/profileUpload', [UMKMController::class, 'profileUpload']);
 
 

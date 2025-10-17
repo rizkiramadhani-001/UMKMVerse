@@ -7,12 +7,16 @@ use Illuminate\Http\Request;
 
 class UMKMController extends Controller
 {
-    public function fileUpload(Request $request)
+    public function profileUpload(Request $request)
     {
 
 
         $request->validate([
+            'thumbnail' => 'required',
             'file_upload' => 'required',
+            'name' => 'required',
+            'description' => 'required',
+            'pdf_url' => 'required'            
         ]);
 
         $path = $request->file('file_upload')->storeAs('uploads/video', $request->file('file_upload')->getClientOriginalName());
