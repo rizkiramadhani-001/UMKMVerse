@@ -1,4 +1,5 @@
 <?php
+// Migration corrected: added user_id foreignId, timestamps, and down() method
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -13,12 +14,14 @@ return new class extends Migration
     {
         Schema::create("umkm", function (Blueprint $table) {
             $table->id();
-            $table->foreign("user_id")->references("id")->on("users")->onDelete("cascade");
+            // user_id column + foreign key
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string("thumbnail");
             $table->string("name");
             $table->text("description");
             $table->string("video_profile_url");
             $table->string("pdf_url");
+            $table->timestamps();
 
         });
     }
@@ -28,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('umkm');
     }
 };

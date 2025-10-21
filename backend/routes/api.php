@@ -4,6 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UMKMController;
+use App\Http\Controllers\InvestorController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\DistributorController;
 
 // Public API Routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -32,6 +35,13 @@ Route::get('/supplier/dashboard', function (Request $request) {
 
 
 //FileUpload
-Route::post('/umkm/profileUpload', [UMKMController::class, 'profileUpload']);
+
+// Create UMKM (requires authentication)
+Route::post('/umkm', [UMKMController::class, 'store'])->middleware('auth:sanctum');
+
+// Create investor/supplier/distributor profiles
+Route::post('/investor', [InvestorController::class, 'store'])->middleware('auth:sanctum');
+Route::post('/supplier', [SupplierController::class, 'store'])->middleware('auth:sanctum');
+Route::post('/distributor', [DistributorController::class, 'store'])->middleware('auth:sanctum');
 
 
