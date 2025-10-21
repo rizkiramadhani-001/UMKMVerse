@@ -242,3 +242,61 @@ curl -X POST http://localhost:8000/api/umkm \
   -F "name=Profile Name" \
   -F "description=Profile description"
 ```
+
+---
+6) Forum (Threads & Posts)
+---
+
+The project includes a simple forum feature with `Thread` and `Post` resources.
+
+Routes added:
+- GET /api/threads — list threads
+- GET /api/threads/{thread} — show a thread with its posts
+- POST /api/threads — create a thread (auth required)
+- PUT /api/threads/{thread} — update a thread (auth + owner)
+- DELETE /api/threads/{thread} — delete a thread (auth + owner)
+
+- GET /api/threads/{thread}/posts — list posts in thread
+- POST /api/threads/{thread}/posts — create post in thread (auth required)
+- PUT /api/threads/{thread}/posts/{post} — update post (auth + owner)
+- DELETE /api/threads/{thread}/posts/{post} — delete post (auth + owner)
+
+Example: list threads
+```powershell
+curl http://localhost:8000/api/threads
+```
+
+Example: show thread (includes posts)
+```powershell
+curl http://localhost:8000/api/threads/1
+```
+
+Example: create thread (authenticated)
+```powershell
+curl -X POST http://localhost:8000/api/threads \
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "title=Hello forum" \
+  -F "body=This is the first thread"
+```
+
+Create thread success response (201):
+```json
+{ "data": { "id": 1, "user_id": 2, "title": "Hello forum", "body": "This is the first thread", "created_at": "...", "updated_at": "..." } }
+```
+
+Example: create post in thread (authenticated)
+```powershell
+curl -X POST http://localhost:8000/api/threads/1/posts \
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "body=Nice thread!"
+```
+
+Create post success response (201):
+```json
+{ "data": { "id": 1, "thread_id": 1, "user_id": 2, "body": "Nice thread!", "created_at": "...", "updated_at": "..." } }
+```
+
+Notes:
+- Update/delete endpoints enforce ownership (only the creator can modify/delete).
+- You can add pagination by modifying controllers to use `paginate()` instead of `get()`.
+

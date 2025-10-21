@@ -7,6 +7,8 @@ use App\Http\Controllers\UMKMController;
 use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\DistributorController;
+use App\Http\Controllers\ThreadController;
+use App\Http\Controllers\PostController;
 
 // Public API Routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -28,7 +30,7 @@ Route::get('/investor/dashboard', function (Request $request) {
 Route::get('/supplier/dashboard', function (Request $request) {
     return response()->json($request->user());  // Returns the authenticated supplier's data
 })->middleware(['auth:sanctum', 'HasRole:supplier']);
-Route::get('/supplier/dashboard', function (Request $request) {
+Route::get('/distributor/dashboard', function (Request $request) {
     return response()->json($request->user());  // Returns the authenticated supplier's data
 })->middleware(['auth:sanctum', 'HasRole:distributor']);
 
@@ -43,5 +45,19 @@ Route::post('/umkm', [UMKMController::class, 'store'])->middleware('auth:sanctum
 Route::post('/investor', [InvestorController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/supplier', [SupplierController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/distributor', [DistributorController::class, 'store'])->middleware('auth:sanctum');
+
+// Forum: Threads and Posts
+Route::get('/threads', [ThreadController::class, 'index']);
+Route::get('/threads/{thread}', [ThreadController::class, 'show']);
+Route::post('/threads', [ThreadController::class, 'store'])->middleware('auth:sanctum');
+Route::put('/threads/{thread}', [ThreadController::class, 'update'])->middleware('auth:sanctum');
+Route::delete('/threads/{thread}', [ThreadController::class, 'destroy'])->middleware('auth:sanctum');
+
+// Posts nested under threads
+Route::get('/threads/{thread}/posts', [PostController::class, 'index']);
+Route::post('/threads/{thread}/posts', [PostController::class, 'store'])->middleware('auth:sanctum');
+Route::put('/threads/{thread}/posts/{post}', [PostController::class, 'update'])->middleware('auth:sanctum');
+Route::delete('/threads/{thread}/posts/{post}', [PostController::class, 'destroy'])->middleware('auth:sanctum');
+
 
 
