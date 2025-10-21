@@ -1,6 +1,6 @@
 # UMKMVerse Backend API
 
-This README documents the available API endpoints in this Laravel backend and how to use them. It covers authentication and profile creation endpoints for roles: UMKM, Investor, Supplier, and Distributor.
+This README documents the available API endpoints in this Laravel backend and how to use them. It covers authentication, role-protected dashboards, and profile creation endpoints for roles: UMKM, Investor, Supplier, and Distributor.
 
 ## Authentication
 
@@ -25,207 +25,220 @@ curl -X POST http://localhost:8000/api/register \
 
 ### Login
 - URL: `POST /api/login`
-- Body (application/json):
-  - `email` (string, required)
-  - `password` (string, required)
+# UMKMVerse Backend — API Usage & Responses
 
-- Response (200):
-  - `message` — success message
-  - `token` — Sanctum API token
+This document explains how to use the backend API and shows the exact JSON responses returned by the current controller implementations.
 
-Example curl:
-```
-curl -X POST http://localhost:8000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"alice@example.com","password":"Secret123!"}'
-```
+Base URL (local)
+- http://localhost:8000/api
 
-## Protected: Get current user
-- URL: `GET /api/user`
-- Headers: `Authorization: Bearer <TOKEN>`
-- Returns the authenticated user's information.
+Quick setup (local)
+- composer install
+- copy `.env.example` → `.env` and configure DB
+- php artisan key:generate
+- php artisan migrate
+- php artisan storage:link (optional, to serve uploaded files)
+- php artisan serve
 
-## Profile creation endpoints (file uploads)
-All profile creation endpoints require authentication via Sanctum. Use the `Authorization: Bearer <TOKEN>` header.
+---
+1) Authentication
+---
 
-Common fields (multipart/form-data):
-- `thumbnail` (file, required) — image file (jpeg/png) max 2MB
-- `video_profile` (file, optional) — video (mp4/quicktime) max ~50MB
-- `pdf` (file, optional) — pdf file max 10MB
-- `name` (string, required)
-- `description` (string, required)
+POST /api/register
+- Request (application/json):
+  - name (string)
+  - email (string)
+  - password (string)
+  - password_confirmation (string)
+  - role (string) — `user` or `admin`
 
-Responses: each creation endpoint returns the created resource in `data` with HTTP 201 status.
+- Success response (201) — exact format returned by `AuthController::register` on success:
 
-### Create UMKM
-- URL: `POST /api/umkm`
-- Controller: `UMKMController@store`
-- Validation rules: see `app/Http/Requests/UMKMStoreRequest.php` (thumbnail required, name, description required, video/pdf optional)
-
-Example (PowerShell):
-```
-curl -X POST http://localhost:8000/api/umkm \
-  -H "Authorization: Bearer <TOKEN>" \
-  -F "thumbnail=@C:\path\to\thumb.jpg" \
-  -F "video_profile=@C:\path\to\video.mp4" \
-  -F "pdf=@C:\path\to\doc.pdf" \
-  -F "name=My UMKM" \
-  -F "description=Description here"
+```json
+{
+  "message": "User registered and logged in successfully!",
+  "token": "<plain-text-token>"
+}
 ```
 
-### Create Investor
-- URL: `POST /api/investor`
-- Controller: `InvestorController@store`
-- Validation: same as `ProfileStoreRequest`
+- Validation errors return 422 with structure:
 
-### Create Supplier
-- URL: `POST /api/supplier`
-- Controller: `SupplierController@store`
-- Validation: same as `ProfileStoreRequest`
+```json
+{ "error": { "field": ["error message"] } }
+```
 
-### Create Distributor
-- URL: `POST /api/distributor`
-- Controller: `DistributorController@store`
-- Validation: same as `ProfileStoreRequest`
+POST /api/login
+- Request (application/json):
+  - email
+  - password
 
-## File storage notes
-- Uploaded files are stored using Laravel's default filesystem (usually `storage/app`).
-- To serve files publicly, run:
+- Success response (200) — exact format returned by `AuthController::login`:
+
+```json
+{
+  "message": "Login successful",
+  "token": "<plain-text-token>"
+}
+```
+
+- Unauthorized credentials return 401:
+
+```json
+{ "error": "Unauthorized" }
+```
+
+GET /api/user
+- Requires header: `Authorization: Bearer <TOKEN>`
+- Returns the authenticated user object (fields depend on `User` model). Example:
+
+```json
+{
+  "id": 1,
+  "name": "Alice",
+  "email": "alice@example.com",
+  "role": "user",
+  "created_at": "2025-10-21T12:00:00.000000Z",
+  "updated_at": "2025-10-21T12:00:00.000000Z"
+}
+```
+
+---
+2) Dashboards (role-protected)
+---
+These are simple routes that return the authenticated user; they are protected with `HasRole` middleware in routes. Current routes file defines:
+
+- GET /api/admin/dashboard (HasRole:admin)
+- GET /api/umkm/dashboard (HasRole:umkm)
+- GET /api/investor/dashboard (HasRole:investor)
+- GET /api/supplier/dashboard (HasRole:supplier)
+- GET /api/supplier/dashboard (HasRole:distributor)  <-- likely a copy/paste issue; should be `/api/distributor/dashboard`
+
+Each returns the authenticated user as JSON.
+
+---
+3) Profiles & file uploads (UMKM, Investor, Supplier, Distributor)
+---
+All profile create endpoints require `Authorization: Bearer <TOKEN>` and accept multipart/form-data.
+
+Common form fields (multipart):
+- thumbnail (file, required) — image, max 2MB
+- video_profile (file, optional) — video/mp4 or quicktime, max ~50MB
+- pdf (file, optional) — pdf, max 10MB
+- name (string, required)
+- description (string, required)
+
+Validation rules are defined in `app/Http/Requests/ProfileStoreRequest.php` and `app/Http/Requests/UMKMStoreRequest.php`.
+
+3.1 Create UMKM
+- POST /api/umkm
+- Controller: `UMKMController::store`
+- Stores files using `$request->file(...)->store(...)` and creates a `UMKM` model.
+
+- Success response (201):
+```json
+{
+  "data": {
+    "id": 10,
+    "user_id": 2,
+    "thumbnail": "uploads/thumbnails/abc123.jpg",
+    "name": "My UMKM",
+    "description": "Description here",
+    "video_profile_url": "uploads/video/vid.mp4",
+    "pdf_url": "uploads/pdf/doc.pdf",
+    "created_at": "2025-10-21T12:34:56.000000Z",
+    "updated_at": "2025-10-21T12:34:56.000000Z"
+  }
+}
+```
+
+3.2 UMKM profileUpload helper
+- POST /api/umkm/profileUpload
+- Expects `file_upload` plus other required fields (per controller implementation). It stores uploaded file under `uploads/video` and returns metadata.
+
+- Exact success response:
+```json
+{
+  "message": {
+    "data": "success",
+    "file_upload": {
+      "name": "video.mp4",
+      "mime": "video/mp4",
+      "size": 1234567
+    }
+  }
+}
+```
+
+3.3 Create Investor
+- POST /api/investor
+- Controller: `InvestorController::store` (uses `ProfileStoreRequest`)
+- Success response (201): similar to UMKM but with the `investors` model data in `data`:
+
+```json
+{
+  "data": {
+    "id": 7,
+    "user_id": 3,
+    "thumbnail": "uploads/thumbnails/def456.jpg",
+    "name": "Investor Name",
+    "description": "Investor description",
+    "video_profile_url": "uploads/video/ivideo.mp4",
+    "pdf_url": "uploads/pdf/iinv.pdf",
+    "created_at": "2025-10-21T12:35:00.000000Z",
+    "updated_at": "2025-10-21T12:35:00.000000Z"
+  }
+}
+```
+
+3.4 Create Supplier
+- POST /api/supplier
+- Controller: `SupplierController::store`
+- Response structure identical to Investor example but for `suppliers` model.
+
+3.5 Create Distributor
+- POST /api/distributor
+- Controller: `DistributorController::store`
+- Response structure identical to Investor example but for `distributors` model.
+
+---
+4) Notes & tips
+---
+- Files are stored with the default disk (usually `storage/app`). To make them web-accessible run:
 
 ```powershell
 php artisan storage:link
 ```
 
-- To return public URLs from controllers, use `Storage::url($path)` before returning in the response.
+- To return public URLs in responses, change controllers to wrap stored paths with `Storage::url($path)` before returning.
 
-## Database & Migrations
-- This project contains migrations for `users` and `umkm`. The models `Investor`, `Supplier`, and `Distributor` were added but migrations for their tables may not exist. If you need tables for those models, create migrations (e.g. `create_investors_table`, `create_suppliers_table`, `create_distributors_table`) with columns similar to the `umkm` migration: `id`, `user_id` (foreign), `thumbnail`, `name`, `description`, `video_profile_url`, `pdf_url`, timestamps.
+- The `investors`, `suppliers`, and `distributors` models were added but you may need to create migrations to persist those tables.
 
-## Tests
-- The project uses Pest for testing. Run tests with:
+- If you want an OpenAPI/Swagger spec, I can generate one based on these routes and controllers.
 
+---
+5) Examples (PowerShell/curl)
+---
+Register and get token:
 ```powershell
-php vendor/bin/pest
+curl -X POST http://localhost:8000/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice","email":"alice@example.com","password":"Secret123!","password_confirmation":"Secret123!","role":"user"}'
 ```
 
-## Next steps / Suggestions
-- Add migrations for investor/supplier/distributor tables if you intend to persist those resources.
-- Add feature tests for the authenticated file upload endpoints.
-- Return fully-qualified URLs for uploaded files in responses using `Storage::url()`.
+Login and get token:
+```powershell
+curl -X POST http://localhost:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@example.com","password":"Secret123!"}'
+```
 
-If you'd like, I can add migrations and feature tests next — tell me which you'd prefer.
-# UMKMVerse API Documentation
-
-This is a simple Laravel API for user registration and login functionality, with support for role-based access control.
-
-## Requirements
-
-- PHP >= 7.4  
-- Laravel >= 8.x  
-- Composer
-
-## Installation
-
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/rizkiramadhani-001/UMKMVerse/tree/backend/backend
-    cd UMKMVerse/backend
-    ```
-
-2. Install dependencies:
-    ```bash
-    composer install
-    ```
-
-3. Copy the `.env.example` to `.env` and configure your environment variables (database, mail, etc.):
-    ```bash
-    cp .env.example .env
-    ```
-
-4. Generate the application key:
-    ```bash
-    php artisan key:generate
-    ```
-
-5. Run migrations:
-    ```bash
-    php artisan migrate
-    ```
-
-## API Endpoints
-
-### Register User
-
-- **URL**: `/api/register`  
-- **Method**: `POST`  
-- **Request Body**:
-    ```json
-    {
-      "name": "John Doe",
-      "email": "johndoe@example.com",
-      "password": "password123",
-      "password_confirmation": "password123",
-      "role": "user"
-    }
-    ```
-- **Response**:
-    ```json
-    {
-      "message": "User registered successfully!",
-      "data": {
-        "id": 1,
-        "name": "John Doe",
-        "email": "johndoe@example.com",
-        "role": "user"
-      },
-      "token": "your-api-token"
-    }
-    ```
-
-### Login User
-
-- **URL**: `/api/login`  
-- **Method**: `POST`  
-- **Request Body**:
-    ```json
-    {
-      "email": "johndoe@example.com",
-      "password": "password123"
-    }
-    ```
-- **Response**:
-    ```json
-    {
-      "message": "Login successful",
-      "token": "your-api-token"
-    }
-    ```
-
-- **Authorization Header Example**:  
-    Once you receive your token, include it in the header for authenticated requests:
-    ```
-    Authorization: Bearer your-api-token
-    ```
-
-### Protected Route Example
-
-- **URL**: `/api/user`  
-- **Method**: `GET`  
-- **Headers**:  
-    ```
-    Authorization: Bearer your-api-token
-    ```
-- **Response**:
-    ```json
-    {
-      "id": 1,
-      "name": "John Doe",
-      "email": "johndoe@example.com",
-      "role": "user"
-    }
-    ```
-
-## Conclusion
-
-This API allows you to register and authenticate users with role-based access control.  
-After logging in, use the **Bearer token** in the `Authorization` header to access protected routes according to the user's role.
+Create a profile (UMKM example):
+```powershell
+curl -X POST http://localhost:8000/api/umkm \
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "thumbnail=@C:\path\to\thumb.jpg" \
+  -F "video_profile=@C:\path\to\video.mp4" \
+  -F "pdf=@C:\path\to\doc.pdf" \
+  -F "name=Profile Name" \
+  -F "description=Profile description"
+```
