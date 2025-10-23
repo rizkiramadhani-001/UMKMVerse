@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\MessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -9,6 +10,8 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\ThreadController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ChatMessageController;
 
 // Public API Routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -40,11 +43,15 @@ Route::get('/distributor/dashboard', function (Request $request) {
 
 // Create UMKM (requires authentication)
 Route::post('/umkm', [UMKMController::class, 'store'])->middleware('auth:sanctum');
-
-// Create investor/supplier/distributor profiles
 Route::post('/investor', [InvestorController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/supplier', [SupplierController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/distributor', [DistributorController::class, 'store'])->middleware('auth:sanctum');
+
+
+
+
+
+
 
 // Forum: Threads and Posts
 Route::get('/threads', [ThreadController::class, 'index']);
@@ -59,5 +66,31 @@ Route::post('/threads/{thread}/posts', [PostController::class, 'store'])->middle
 Route::put('/threads/{thread}/posts/{post}', [PostController::class, 'update'])->middleware('auth:sanctum');
 Route::delete('/threads/{thread}/posts/{post}', [PostController::class, 'destroy'])->middleware('auth:sanctum');
 
+
+// Chat routes (private chats) - require authentication
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/chats', [ChatController::class, 'index']);
+    Route::post('/chats', [ChatController::class, 'store']);
+
+    Route::get('/chats/{chat}/messages', [ChatMessageController::class, 'index']);
+    Route::post('/chats/{chat}/messages', [ChatMessageController::class, 'store']);
+    Route::post('/chats/{chat}/read', [ChatMessageController::class, 'markRead']);
+    Route::delete('/chats/{chat}/messages/{message}', [ChatMessageController::class, 'destroy']);
+});
+
+
+Route::get('/send-message', function () {
+    // Sending a simple object instead of a model
+    $message = [
+        'user' => 'John Doe',
+        'text' => 'Hello from Laravel Reverb!',
+        'timestamp' => now()->toDateTimeString(),
+    ];
+
+    // Fire the event
+    broadcast(new MessageSent($message));
+
+    return response()->json(['status' => 'Message broadcasted!']);
+});
 
 

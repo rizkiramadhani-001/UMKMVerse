@@ -300,3 +300,99 @@ Notes:
 - Update/delete endpoints enforce ownership (only the creator can modify/delete).
 - You can add pagination by modifying controllers to use `paginate()` instead of `get()`.
 
+---
+7) Chat (Private messages)
+---
+
+This project includes a light-weight private chat API for one-to-one conversations between users. All chat endpoints require authentication (`Authorization: Bearer <TOKEN>`) and only participants may access a chat's messages.
+
+Endpoints
+
+- GET /api/chats
+  - Description: List chats for the authenticated user. Each chat includes `user_one_id`, `user_two_id`, timestamps and the latest message (if any).
+  - Auth: required
+  - Response (200) — array of chat objects. Example:
+
+```json
+[
+  {
+    "id": 5,
+    "user_one_id": 2,
+    "user_two_id": 3,
+    "created_at": "2025-10-21T12:00:00.000000Z",
+    "updated_at": "2025-10-21T12:00:00.000000Z",
+    "messages": [ { /* latest message object */ } ],
+    "user_one": { /* user object */ },
+    "user_two": { /* user object */ }
+  }
+]
+```
+
+- POST /api/chats
+  - Description: Create or find a chat between the authenticated user and `other_user_id`. The controller normalizes user order to avoid duplicates.
+  - Body (application/json): `{ "other_user_id": 3 }`
+  - Auth: required
+  - Response (201):
+
+```json
+{ "data": { "id": 5, "user_one_id": 2, "user_two_id": 3, "created_at": "..." } }
+```
+
+- GET /api/chats/{chat}/messages
+  - Description: List all messages in a chat (oldest -> newest). Only participants can access.
+  - Auth: required
+  - Response (200): array of message objects:
+
+```json
+[
+  { "id": 1, "chat_id": 5, "sender_id": 2, "message": "Hi!", "read_at": null, "created_at": "..." },
+  { "id": 2, "chat_id": 5, "sender_id": 3, "message": "Hello!", "read_at": "2025-10-21T12:10:00.000000Z", "created_at": "..." }
+]
+```
+
+- POST /api/chats/{chat}/messages
+  - Description: Send a message in a chat.
+  - Body (application/json): `{ "message": "Hello there" }`
+  - Auth: required
+  - Response (201): `{ "data": { /* message object */ } }`
+
+- POST /api/chats/{chat}/read
+  - Description: Mark unread messages in the chat (those sent by the other participant) as read. Returns the number of rows updated.
+  - Auth: required
+  - Response (200): `{ "updated": 3 }`
+
+- DELETE /api/chats/{chat}/messages/{message}
+  - Description: Delete a message. Only the message sender can delete their message.
+  - Auth: required
+  - Response (200): `{ "deleted": true }`
+
+Examples (PowerShell/curl)
+
+Create or get a chat with user id 3:
+```powershell
+curl -X POST http://localhost:8000/api/chats \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"other_user_id":3}'
+```
+
+Send a message:
+```powershell
+curl -X POST http://localhost:8000/api/chats/5/messages \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Hello from API"}'
+```
+
+List messages for a chat:
+```powershell
+curl http://localhost:8000/api/chats/5/messages \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+Notes & tips
+
+- The controllers use simple participant checks to enforce access; you can replace these with Policies for a more idiomatic Laravel authorization approach.
+- To add unread counts to the chat list, compute unread per-chat for the authenticated user and return it alongside the chat object.
+
+
