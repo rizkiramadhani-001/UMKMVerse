@@ -20,7 +20,7 @@ class MessageSent implements ShouldBroadcastNow
 
     public function broadcastOn()
     {
-        return new Channel('broadcast');
+        return new Channel('broadcast.' . $this->message->chat_id);
     }
 
     public function broadcastAs()

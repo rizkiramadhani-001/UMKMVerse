@@ -40,8 +40,8 @@
 
     console.log(echo);
 
-    echo.channel('broadcast')
-        .listen('.message.sent', function(event) {
+    echo.channel('broadcast.2')
+        .listen('message.sent', function(event) {
             // This is where you process the real-time event
             console.log('Received event:', event);
             document.body.innerHTML += `<p>Message Received: ${JSON.stringify(event)}</p>`;

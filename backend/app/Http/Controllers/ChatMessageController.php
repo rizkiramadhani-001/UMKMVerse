@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
 use App\Http\Requests\ChatMessageStoreRequest;
 use App\Models\Chat;
 use App\Models\ChatMessage;
@@ -35,6 +36,8 @@ class ChatMessageController extends Controller
             'message' => $request->input('message'),
         ]);
 
+        broadcast(new MessageSent($message));
+
         return response()->json(['data' => $message], 201);
     }
 
@@ -54,15 +57,15 @@ class ChatMessageController extends Controller
         return response()->json(['updated' => $updated]);
     }
 
-    // Delete a message (only sender can delete)
-    public function destroy(Request $request, Chat $chat, ChatMessage $message)
-    {
-        $user = $request->user();
-        if ($message->sender_id !== $user->id) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
+        // Delete a message (only sender can delete)
+        public function destroy(Request $request, Chat $chat, ChatMessage $message)
+        {
+            $user = $request->user();
+            if ($message->sender_id !== $user->id) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
 
-        $message->delete();
-        return response()->json(['deleted' => true]);
+            $message->delete();
+            return response()->json(['deleted' => true]);
+        }
     }
-}

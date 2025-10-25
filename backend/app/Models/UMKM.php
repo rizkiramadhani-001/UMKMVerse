@@ -21,12 +21,24 @@ class UMKM extends Model
      * @var array
      */
     protected $fillable = [
-        'user_id',
-        'thumbnail',
-        'name',
-        'description',
-        'video_profile_url',
-        'pdf_url',
+        'namaUmkm',
+        'nib',
+        'bidangUsaha',
+        'email',
+        'phone',
+        'website',
+        'lokasiUsaha',
+        'alamatLengkap',
+        'deskripsiSingkat',
+        'deskripsiLengkap',
+        'visiMisi',
+        'targetPasar',
+        'keunggulanProduk',
+        'videoPitchUrl',
+        'minInvestasi',
+        'targetInvestasi',
+        'logo',
+        'fotoProduk'
     ];
 
     /**
