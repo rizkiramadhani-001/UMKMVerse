@@ -1,6 +1,7 @@
 <?php
 
 use App\Events\MessageSent;
+use App\Http\Controllers\OrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -42,7 +43,7 @@ Route::get('/distributor/dashboard', function (Request $request) {
 //FileUpload
 
 // Create UMKM (requires authentication)
-Route::post('/umkm', [UMKMController::class, 'store'])->middleware('auth:sanctum');
+Route::post('/umkm', [UMKMController::class, 'store'])->middleware(['auth:sanctum', 'HasRole:umkm']);
 Route::post('/investor', [InvestorController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/supplier', [SupplierController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/distributor', [DistributorController::class, 'store'])->middleware('auth:sanctum');
@@ -94,3 +95,6 @@ Route::get('/send-message', function () {
 });
 
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('orders', OrderController::class);
+});

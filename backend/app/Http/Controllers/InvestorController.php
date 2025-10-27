@@ -10,7 +10,7 @@ use App\Models\Investor;
 
 class InvestorController extends Controller
 {
-    public function store(ProfileStoreRequest $request)
+    public function store(Request $request)
     {
         $user = $request->user();
 
@@ -35,6 +35,6 @@ class InvestorController extends Controller
             'pdf_url' => $pdfPath,
         ]);
 
-        return response()->json(['data' => $investor], 201);
+      
     }
 }
