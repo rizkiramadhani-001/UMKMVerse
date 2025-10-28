@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import axios from 'axios';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -50,23 +51,27 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-
-
+    if (!validateForm()) return;
     setIsLoading(true);
+    if (!sessionStorage.getItem('token')) {
+      try {
+        e.preventDefault();
+        if (!validateForm()) return;
 
-    // Simulasi API call (nanti ganti dengan API real dari Riski)
-    fetch('/api/login', {
-      method: 'POST',
-      body: JSON.stringify(formData),
-      headers: {
-        'Content-Type': 'application/json'  
+        axios.post(`http://127.0.0.1:8000/api/login`, formData)
+          .then(response => {
+            console.log("Login successful:", response.data);
+            sessionStorage.setItem('token', response.data.token);
+            sessionStorage.setItem('redirect_url', response.data.redirect_url);
+            setIsLoading(false);
+            navigate(response.data.redirect_url);
+            // Simpan token atau data user sesuai kebutuhan
+          })
+      }catch(error){
+        console.error("Login error:", error);
       }
-    })
-    .then(response => response.json())
-
-    if (!validateForm()) {
-      return;
+    }else{
+      navigate(sessionStorage.getItem('redirect_url'));
     }
   };
 
@@ -81,7 +86,7 @@ export default function Login() {
               UMKMVerse
             </h1>
           </Link>
-          
+
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Selamat Datang Kembali
           </h2>
@@ -106,9 +111,8 @@ export default function Login() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                    errors.email ? 'border-red-300' : 'border-gray-200'
-                  }`}
+                  className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${errors.email ? 'border-red-300' : 'border-gray-200'
+                    }`}
                   placeholder="nama@email.com"
                 />
               </div>
@@ -133,9 +137,8 @@ export default function Login() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                    errors.password ? 'border-red-300' : 'border-gray-200'
-                  }`}
+                  className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${errors.password ? 'border-red-300' : 'border-gray-200'
+                    }`}
                   placeholder="Masukkan password"
                 />
                 <button
@@ -163,8 +166,8 @@ export default function Login() {
                 />
                 <span className="text-sm text-gray-600">Ingat saya</span>
               </label>
-              <Link 
-                to="/forgot-password" 
+              <Link
+                to="/forgot-password"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium transition"
               >
                 Lupa Password?
@@ -175,9 +178,8 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-lg transition transform hover:scale-105 ${
-                isLoading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-lg transition transform hover:scale-105 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               {isLoading ? 'Memproses...' : 'Masuk'}
             </button>
@@ -197,8 +199,8 @@ export default function Login() {
           <div className="text-center">
             <p className="text-gray-600">
               Belum punya akun?{' '}
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="text-blue-600 hover:text-blue-700 font-semibold transition"
               >
                 Daftar Sekarang
@@ -209,8 +211,8 @@ export default function Login() {
 
         {/* Back to Home */}
         <div className="text-center mt-6">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="text-gray-600 hover:text-gray-900 text-sm transition"
           >
             ← Kembali ke Beranda

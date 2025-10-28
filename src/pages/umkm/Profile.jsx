@@ -1,12 +1,17 @@
 // src/pages/umkm/Profile.jsx
 import { useState, useEffect } from 'react';
 import { Building2, MapPin, Phone, Mail, Globe, Upload, Video, Save, Eye, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 export default function UMKMProfile() {
   const [activeTab, setActiveTab] = useState('basic');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const {search} = useLocation();
+  const queryParams = new URLSearchParams(search);
+  const id = queryParams.get('id');
+
 
   // ========================================
   // 🔴 BACKEND INTEGRATION POINT #1: FETCH USER DATA
