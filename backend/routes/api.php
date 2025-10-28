@@ -20,6 +20,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return response()->json($request->user());  // Returns the authenticated user's data
 });
+Route::get('/getMe', function (Request $request) {
+    return response()->json($request->user());  // Returns the authenticated user's data
+})->middleware('auth:sanctum');
 
 //Protected Route
 Route::get('/admin/dashboard', function (Request $request) {
@@ -72,6 +75,20 @@ Route::delete('/threads/{thread}/posts/{post}', [PostController::class, 'destroy
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chats', [ChatController::class, 'index']);
     Route::post('/chats', [ChatController::class, 'store']);
+    Route::get('/chats/all/messages', function (Request $request) {
+        $user = $request->user();
+        $chats = \App\Models\Chat::where('user_one_id', $user->id)
+            ->orWhere('user_two_id', $user->id)
+            ->with(['messages' => function($q){ $q->oldest(); }])
+            ->get();
+        $allMessages = [];
+        foreach ($chats as $chat) {
+            foreach ($chat->messages as $message) {
+                $allMessages[] = $message;
+            }
+        }
+        return response()->json($allMessages);
+    });
 
     Route::get('/chats/{chat}/messages', [ChatMessageController::class, 'index']);
     Route::post('/chats/{chat}/messages', [ChatMessageController::class, 'store']);

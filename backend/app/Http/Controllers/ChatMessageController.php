@@ -24,8 +24,9 @@ class ChatMessageController extends Controller
     }
 
     // Send a message in a chat
-    public function store(ChatMessageStoreRequest $request, Chat $chat)
+    public function store(Request $request, Chat $chat)
     {
+        //Message In Chat
         $user = $request->user();
         if ($chat->user_one_id !== $user->id && $chat->user_two_id !== $user->id) {
             return response()->json(['message' => 'Forbidden'], 403);

@@ -55,7 +55,7 @@ class UMKMController extends Controller
 
         // Save to database
         $umkm = UMKM::create([
-            'user_id' => $request->user_id,
+            'user_id' => $request->user('id'),
             'namaUmkm' => $request->namaUmkm,
             'nib' => $request->nib,
             'bidangUsaha' => $request->bidangUsaha,

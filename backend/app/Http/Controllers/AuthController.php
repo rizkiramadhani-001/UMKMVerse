@@ -17,18 +17,19 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
-            'role' => 'required|in:user,admin', // Add role validation (user or admin)
+            'phone' => 'nullable|string|max:50',
+            'password' => ['required', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'role' => 'required|in:user,admin,umkm,investor,distributor', // Add role validation (user or admin)
         ]);
-
         if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 422);
+            return response()->json(['error' => $request], 422);
         }
 
         // Create the user
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => $request->role, // Store the role
         ]);
@@ -39,6 +40,20 @@ class AuthController extends Controller
             'password' => $request->password
         ];
 
+        $redirect_url = '';
+        if ($user->role === 'admin') { 
+            $redirect_url = '/admin-dashboard';
+        } elseif ($user->role === 'umkm') {
+            $redirect_url = '/umkm-dashboard';
+        } elseif ($user->role === 'investor') {
+            $redirect_url = '/investor-dashboard';
+        } elseif ($user->role === 'supplier') {
+            $redirect_url = '/supplier-dashboard';
+        } elseif ($user->role === 'distributor') {
+            $redirect_url = '/distributor-dashboard';
+        } else {
+            $redirect_url = '/user-dashboard';
+        }
         // Attempt to log the user in
         if (Auth::attempt($credentials)) {
             // If login is successful, generate the token
@@ -48,6 +63,7 @@ class AuthController extends Controller
             // Return only the token in the response
             return response()->json([
                 'message' => 'User registered and logged in successfully!',
+                'redirect_url'=> $redirect_url,
                 'token' => $token, // No user data in response
             ], 201);
         } else {
@@ -77,8 +93,23 @@ class AuthController extends Controller
         // Generate token
         $token = $user->createToken('API Token')->plainTextToken;
 
+
+        if ($user->role === 'admin') {
+            $redirect_url = '/admin-dashboard';
+        } elseif ($user->role === 'umkm') {
+            $redirect_url = '/umkm-dashboard';
+        } elseif ($user->role === 'investor') {
+            $redirect_url = '/investor-dashboard';
+        } elseif ($user->role === 'supplier') {
+            $redirect_url = '/supplier-dashboard';
+        } elseif ($user->role === 'distributor') {
+            $redirect_url = '/distributor-dashboard';
+        } else {
+            $redirect_url = '/user-dashboard';
+        }
         return response()->json([
             'message' => 'Login successful',
+            'redirect_url'=> $redirect_url,
             'token' => $token, // Only returning token
         ]);
     }
