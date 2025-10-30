@@ -56,48 +56,48 @@ import InvestorPortfolio from '../pages/investor/Portfolio';
 import InvestorProfitSharing from '../pages/investor/ProfitSharing';
 import InvestorAnalytics from '../pages/investor/Analytics';
 // TODO: Tambahkan nanti
-// import InvestorBrowseUMKM from '../pages/investor/BrowseUMKM';
-// import InvestorUMKMDetail from '../pages/investor/UMKMDetail';
-// import InvestorContracts from '../pages/investor/Contracts';
-// import InvestorChat from '../pages/investor/Chat';
-// import InvestorSettings from '../pages/investor/Settings';
+import InvestorBrowseUMKM from '../pages/investor/BrowseUMKM';
+import InvestorUMKMDetail from '../pages/investor/UMKMDetail';
+import InvestorContracts from '../pages/investor/Contracts';
+import InvestorChat from '../pages/investor/Chat';
+import InvestorSettings from '../pages/investor/Settings';
 
 // ========================================
 // SUPPLIER PAGES
 // ========================================
 import SupplierDashboard from '../pages/supplier/Dashboard';
 // TODO: Tambahkan nanti
-// import SupplierOrders from '../pages/supplier/Orders';
-// import SupplierProducts from '../pages/supplier/Products';
-// import SupplierContracts from '../pages/supplier/Contracts';
-// import SupplierChat from '../pages/supplier/Chat';
-// import SupplierForum from '../pages/supplier/Forum';
-// import SupplierSettings from '../pages/supplier/Settings';
+import SupplierOrders from '../pages/supplier/Orders';
+import SupplierProducts from '../pages/supplier/Products';
+import SupplierContracts from '../pages/supplier/Contracts';
+import SupplierChat from '../pages/supplier/Chat';
+import SupplierForum from '../pages/supplier/Forum';
+import SupplierSettings from '../pages/supplier/Settings';
 
 // ========================================
 // DISTRIBUTOR PAGES
 // ========================================
 import DistributorDashboard from '../pages/distributor/Dashboard';
 // TODO: Tambahkan nanti
-// import DistributorOrders from '../pages/distributor/Orders';
-// import DistributorTracking from '../pages/distributor/Tracking';
-// import DistributorContracts from '../pages/distributor/Contracts';
-// import DistributorChat from '../pages/distributor/Chat';
-// import DistributorForum from '../pages/distributor/Forum';
-// import DistributorSettings from '../pages/distributor/Settings';
+import DistributorOrders from '../pages/distributor/Orders';
+import DistributorTracking from '../pages/distributor/Tracking';
+import DistributorContracts from '../pages/distributor/Contracts';
+import DistributorChat from '../pages/distributor/Chat';
+import DistributorForum from '../pages/distributor/Forum';
+import DistributorSettings from '../pages/distributor/Settings';
 
 // ========================================
 // ADMIN PAGES
 // ========================================
 import AdminDashboard from '../pages/admin/Dashboard';
 // TODO: Tambahkan nanti
-// import AdminUsers from '../pages/admin/Users';
-// import AdminUMKM from '../pages/admin/UMKM';
-// import AdminVerification from '../pages/admin/Verification';
-// import AdminTransactions from '../pages/admin/Transactions';
-// import AdminForum from '../pages/admin/Forum';
-// import AdminAnalytics from '../pages/admin/Analytics';
-// import AdminSettings from '../pages/admin/Settings';
+import AdminUsers from '../pages/admin/Users';
+import AdminUMKM from '../pages/admin/UMKM';
+import AdminVerification from '../pages/admin/Verification';
+import AdminTransactions from '../pages/admin/Transactions';
+import AdminForum from '../pages/admin/Forum';
+import AdminAnalytics from '../pages/admin/Analytics';
+import AdminSettings from '../pages/admin/Settings';
 
 const router = createBrowserRouter([
   // ========================================
@@ -234,28 +234,28 @@ const router = createBrowserRouter([
       {
         path: 'analytics',
         element: <InvestorAnalytics />
-      }
+      },
       // TODO: Uncomment ketika pages sudah dibuat
-      // {
-      //   path: 'browse',
-      //   element: <InvestorBrowseUMKM />
-      // },
-      // {
-      //   path: 'umkm/:id',
-      //   element: <InvestorUMKMDetail />
-      // },
-      // {
-      //   path: 'contracts',
-      //   element: <InvestorContracts />
-      // },
-      // {
-      //   path: 'chat',
-      //   element: <InvestorChat />
-      // },
-      // {
-      //   path: 'settings',
-      //   element: <InvestorSettings />
-      // }
+      {
+        path: 'browse',
+        element: <InvestorBrowseUMKM />
+      },
+      {
+        path: 'umkm/:id',
+        element: <InvestorUMKMDetail />
+      },
+      {
+        path: 'contracts',
+        element: <InvestorContracts />
+      },
+      {
+        path: 'chat',
+        element: <InvestorChat />
+      },
+      {
+        path: 'settings',
+        element: <InvestorSettings />
+      }
     ]
   },
 
@@ -269,32 +269,32 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <SupplierDashboard />
-      }
+      },
       // TODO: Uncomment ketika pages sudah dibuat
-      // {
-      //   path: 'orders',
-      //   element: <SupplierOrders />
-      // },
-      // {
-      //   path: 'products',
-      //   element: <SupplierProducts />
-      // },
-      // {
-      //   path: 'contracts',
-      //   element: <SupplierContracts />
-      // },
-      // {
-      //   path: 'chat',
-      //   element: <SupplierChat />
-      // },
-      // {
-      //   path: 'forum',
-      //   element: <SupplierForum />
-      // },
-      // {
-      //   path: 'settings',
-      //   element: <SupplierSettings />
-      // }
+      {
+        path: 'orders',
+        element: <SupplierOrders />
+      },
+      {
+        path: 'products',
+        element: <SupplierProducts />
+      },
+      {
+        path: 'contracts',
+        element: <SupplierContracts />
+      },
+      {
+        path: 'chat',
+        element: <SupplierChat />
+      },
+      {
+        path: 'forum',
+        element: <SupplierForum />
+      },
+      {
+        path: 'settings',
+        element: <SupplierSettings />
+      }
     ]
   },
 
@@ -308,32 +308,32 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <DistributorDashboard />
-      }
+      },
       // TODO: Uncomment ketika pages sudah dibuat
-      // {
-      //   path: 'orders',
-      //   element: <DistributorOrders />
-      // },
-      // {
-      //   path: 'tracking',
-      //   element: <DistributorTracking />
-      // },
-      // {
-      //   path: 'contracts',
-      //   element: <DistributorContracts />
-      // },
-      // {
-      //   path: 'chat',
-      //   element: <DistributorChat />
-      // },
-      // {
-      //   path: 'forum',
-      //   element: <DistributorForum />
-      // },
-      // {
-      //   path: 'settings',
-      //   element: <DistributorSettings />
-      // }
+      {
+        path: 'orders',
+        element: <DistributorOrders />
+      },
+      {
+        path: 'tracking',
+        element: <DistributorTracking />
+      },
+      {
+        path: 'contracts',
+        element: <DistributorContracts />
+      },
+      {
+        path: 'chat',
+        element: <DistributorChat />
+      },
+      {
+        path: 'forum',
+        element: <DistributorForum />
+      },
+      {
+        path: 'settings',
+        element: <DistributorSettings />
+      }
     ]
   },
 
@@ -347,36 +347,36 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <AdminDashboard />
-      }
+      },
       // TODO: Uncomment ketika pages sudah dibuat
-      // {
-      //   path: 'users',
-      //   element: <AdminUsers />
-      // },
-      // {
-      //   path: 'umkm',
-      //   element: <AdminUMKM />
-      // },
-      // {
-      //   path: 'verification',
-      //   element: <AdminVerification />
-      // },
-      // {
-      //   path: 'transactions',
-      //   element: <AdminTransactions />
-      // },
-      // {
-      //   path: 'forum',
-      //   element: <AdminForum />
-      // },
-      // {
-      //   path: 'analytics',
-      //   element: <AdminAnalytics />
-      // },
-      // {
-      //   path: 'settings',
-      //   element: <AdminSettings />
-      // }
+      {
+        path: 'users',
+        element: <AdminUsers />
+      },
+      {
+        path: 'umkm',
+        element: <AdminUMKM />
+      },
+      {
+        path: 'verification',
+        element: <AdminVerification />
+      },
+      {
+        path: 'transactions',
+        element: <AdminTransactions />
+      },
+      {
+        path: 'forum',
+        element: <AdminForum />
+      },
+      {
+        path: 'analytics',
+        element: <AdminAnalytics />
+      },
+      {
+        path: 'settings',
+        element: <AdminSettings />
+      }
     ]
   }
 ]);
