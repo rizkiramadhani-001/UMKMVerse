@@ -19,6 +19,9 @@ import {
   Package,
   Truck
 } from 'lucide-react';
+import axios from 'axios';
+const POLLING_INTERVAL = 2000; // 3 seconds
+
 
 export default function UMKMChat() {
   const [isLoading, setIsLoading] = useState(true);
@@ -27,28 +30,148 @@ export default function UMKMChat() {
   const [messageInput, setMessageInput] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all'); // all, investor, supplier, distributor
   const messagesEndRef = useRef(null);
+  const intervalRef = useRef(null);
+
 
   // ========================================
   // 🔵 BACKEND INTEGRATION POINT #1: STATE MANAGEMENT
   // ========================================
   const [contacts, setContacts] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [currentUser, setCurrentUser] = useState({
-    id: 'umkm-123',
-    name: 'Warung Kopi Nusantara',
-    role: 'umkm'
-  });
+  const [currentUser, setCurrentUser] = useState({});
 
   // ========================================
   // 🔵 BACKEND INTEGRATION POINT #2: FETCH CONTACTS/CONVERSATIONS
   // ========================================
   useEffect(() => {
-    fetchContacts();
+    fetchIsMe();
+
   }, []);
+
+  useEffect(()=>{
+    if (currentUser.id){
+      fetchData();
+      fetchContacts();
+    }
+  }, [currentUser]);
+
+    useEffect(() => {
+    if (!selectedContact) return;
+
+    // Fetch immediately
+    fetchMessagesData(selectedContact.id);
+
+    // Clear previous interval if any
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    // Start polling
+    intervalRef.current = setInterval(() => {
+      fetchMessagesData(selectedContact.id);
+    }, POLLING_INTERVAL);
+
+    // Cleanup when contact changes or component unmounts
+    return () => clearInterval(intervalRef.current);
+  }, [selectedContact]);
+
+const fetchData = async () => {
+  try {
+
+    const token = sessionStorage.getItem('token');
+
+    const response = await axios.get('http://127.0.0.1:8000/api/chats', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("Chat data:", response.data);
+
+    const contacts = response.data.map((item) => {
+      // Check if the current user is user_one
+      const isUserOne = item.user_one.id === currentUser.id;
+      console.log("Is User One:", isUserOne);
+      // Select the other participant as receiver
+      const receiver = isUserOne ? item.user_two : item.user_one;
+      console.log("Receiver:", receiver);
+      if (isUserOne)
+      {
+        console.log("User One is current user");
+      }
+
+      return {
+        id: item.id,
+        chat_id: item.chat_id,
+        name: receiver?.name || "Unknown",
+        role: receiver?.role || "",
+        avatar: receiver?.avatar || null,
+        lastMessage: item.last_message?.message || "Belum ada pesan",
+        lastMessageTime: item.last_message?.created_at || item.updated_at,
+        unreadCount: item.unread_count || 0,
+        isOnline: receiver?.is_online || false,
+        lastSeen: receiver?.last_seen || null,
+      };
+    });
+
+    console.log("Contacts:", contacts);
+    setContacts(contacts);
+
+  } catch (error) {
+    console.error("Error fetching chat data:", error);
+  }
+};
+
+
+  const fetchIsMe = async () => {
+    axios.get(`http://127.0.0.1:8000/api/getMe`, {
+      headers: {
+        Authorization: `Bearer ` + sessionStorage.getItem('token'),
+      },
+    }).then((response) => {
+      console.log("Current user data:", response.data);
+      const isme = {
+        id: response.data.id,
+        name: response.data.name,
+        role: response.data.role
+      }
+      setCurrentUser(isme);
+    });
+  }
+
+
+  const fetchMessagesData = async (id) => {
+    axios.get(`http://127.0.0.1:8000/api/chats/${id}/messages`, {
+      headers: {
+        Authorization: `Bearer ` + sessionStorage.getItem('token'),
+      },
+    }).then((response) => {
+      console.log("Chat messages data:", response.data);
+      const dummyMessages = response.data.map((item) => {
+
+
+        const isOwn = item.sender_id === currentUser.id;
+
+        return {
+          id: item.id,
+          senderId: item.sender_id,
+          senderName: item.sender?.name || "Unknown",
+          message: item.message,
+          messageType: "text",
+          fileUrl: null,
+          fileName: null,
+          sentAt: item.created_at || "2024-07-30T13:00:00Z",
+          status: item.read_at ? "read" : "sent",
+          isOwn: isOwn,
+        };
+      });
+      setMessages(dummyMessages);
+    }).catch((error) => {
+      console.error("Error fetching chat messages data:", error);
+    });
+  }
 
   const fetchContacts = async () => {
     setIsLoading(true);
-    
+
     try {
       // TODO: BACKEND - Ganti dengan actual API call
       // const response = await fetch('/api/umkm/chat/contacts', {
@@ -140,7 +263,7 @@ export default function UMKMChat() {
           }
         ];
 
-        setContacts(dummyContacts);
+        // setContacts(dummyContacts);
         setIsLoading(false);
       }, 1000);
 
@@ -285,11 +408,11 @@ export default function UMKMChat() {
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedContact) return;
 
-    const tempMessage = {
+        const tempMessage = {
       id: `temp-${Date.now()}`,
       senderId: currentUser.id,
       senderName: currentUser.name,
-      receiverId: selectedContact.id,
+      chat_id: selectedContact.id,
       message: messageInput,
       messageType: 'text',
       fileUrl: null,
@@ -299,11 +422,20 @@ export default function UMKMChat() {
       isOwn: true
     };
 
+    const formData  = new FormData() 
+    formData.append('message', messageInput)  
+    
+
     // Optimistic update
     setMessages(prev => [...prev, tempMessage]);
     setMessageInput('');
 
     try {
+      axios.post(`http://127.0.0.1:8000/api/chats/${selectedContact.id}/messages`,formData, {
+        headers: {
+          Authorization: `Bearer ` + sessionStorage.getItem('token'),
+        }
+      }).then()
       // TODO: BACKEND - Ganti dengan actual API call
       // const response = await fetch('/api/umkm/chat/send', {
       //   method: 'POST',
@@ -427,10 +559,10 @@ export default function UMKMChat() {
       // });
 
       // Update local state
-      setContacts(prev => 
-        prev.map(contact => 
-          contact.id === contactId 
-            ? { ...contact, unreadCount: 0 } 
+      setContacts(prev =>
+        prev.map(contact =>
+          contact.id === contactId
+            ? { ...contact, unreadCount: 0 }
             : contact
         )
       );
@@ -497,11 +629,11 @@ export default function UMKMChat() {
   // Filter contacts
   const filteredContacts = contacts.filter(contact => {
     if (selectedFilter !== 'all' && contact.role !== selectedFilter) return false;
-    
+
     if (searchQuery) {
       return contact.name.toLowerCase().includes(searchQuery.toLowerCase());
     }
-    
+
     return true;
   });
 
@@ -565,7 +697,7 @@ export default function UMKMChat() {
         {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
-          
+
           {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -589,11 +721,10 @@ export default function UMKMChat() {
               <button
                 key={filter.id}
                 onClick={() => setSelectedFilter(filter.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                  selectedFilter === filter.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${selectedFilter === filter.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
                 {filter.label}
               </button>
@@ -610,15 +741,15 @@ export default function UMKMChat() {
             </div>
           ) : (
             filteredContacts.map((contact) => (
+              console.log(contact),
               <div
                 key={contact.id}
                 onClick={() => {
                   setSelectedContact(contact);
-                  fetchMessages(contact.id);
+                  fetchMessagesData(contact.id);
                 }}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-                  selectedContact?.id === contact.id ? 'bg-blue-50' : ''
-                }`}
+                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${selectedContact?.id === contact.id ? 'bg-blue-50' : ''
+                  }`}
               >
                 <div className="flex items-start space-x-3">
                   {/* Avatar */}
@@ -637,7 +768,7 @@ export default function UMKMChat() {
                       <h3 className="font-semibold text-gray-900 truncate text-sm">{contact.name}</h3>
                       <span className="text-xs text-gray-500">{formatTime(contact.lastMessageTime)}</span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 truncate flex-1">{contact.lastMessage}</p>
                       {contact.unreadCount > 0 && (
@@ -714,11 +845,10 @@ export default function UMKMChat() {
                 <div className={`max-w-[70%] ${message.isOwn ? 'order-2' : 'order-1'}`}>
                   {message.messageType === 'text' && (
                     <div
-                      className={`px-4 py-2 rounded-2xl ${
-                        message.isOwn
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-900 border border-gray-200'
-                      }`}
+                      className={`px-4 py-2 rounded-2xl ${message.isOwn
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-900 border border-gray-200'
+                        }`}
                     >
                       <p className="text-sm">{message.message}</p>
                     </div>
@@ -726,11 +856,10 @@ export default function UMKMChat() {
 
                   {message.messageType === 'file' && (
                     <div
-                      className={`px-4 py-3 rounded-2xl ${
-                        message.isOwn
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-900 border border-gray-200'
-                      }`}
+                      className={`px-4 py-3 rounded-2xl ${message.isOwn
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-900 border border-gray-200'
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
                         <File size={24} />
@@ -742,9 +871,8 @@ export default function UMKMChat() {
                     </div>
                   )}
 
-                  <div className={`flex items-center space-x-2 mt-1 text-xs text-gray-500 ${
-                    message.isOwn ? 'justify-end' : 'justify-start'
-                  }`}>
+                  <div className={`flex items-center space-x-2 mt-1 text-xs text-gray-500 ${message.isOwn ? 'justify-end' : 'justify-start'
+                    }`}>
                     <span>{formatTime(message.sentAt)}</span>
                     {message.isOwn && getMessageStatusIcon(message.status)}
                   </div>
@@ -815,11 +943,10 @@ export default function UMKMChat() {
               <button
                 onClick={handleSendMessage}
                 disabled={!messageInput.trim()}
-                className={`p-3 rounded-xl transition ${
-                  messageInput.trim()
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                className={`p-3 rounded-xl transition ${messageInput.trim()
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
               >
                 <Send size={20} />
               </button>

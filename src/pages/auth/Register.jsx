@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Eye, EyeOff, AlertCircle, Building2, TrendingUp, Package, Truck, Phone } from 'lucide-react';
+import axios from 'axios';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -117,28 +118,37 @@ export default function Register() {
 
     if (!validateForm()) {
       return;
+
+
     }
 
     setIsLoading(true);
-
-    // Simulasi cek ke API dulu (nanti integrate dengan backend Riski)
-    setTimeout(() => {
-      setIsLoading(false);
-      console.log('Basic Register data:', formData);
-      
-      // Redirect ke halaman register detail berdasarkan role
-      navigate(`/register-${formData.role}`, { 
-        state: { 
-          basicData: {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            password: formData.password,
-            role: formData.role
-          }
-        } 
+      axios.post('http://127.0.0.1:8000/api/register', formData).then(response => {
+        console.log("Registration successful:", response);
+        sessionStorage.setItem('token', response.data.token);
+        navigate(response.data.redirect_url);
+      }).catch(error => {
+        console.error("Registration error:", error);
       });
-    }, 1000);
+
+    // // Simulasi cek ke API dulu (nanti integrate dengan backend Riski)
+    // setTimeout(() => {
+    //   setIsLoading(false);
+    //   console.log('Basic Register data:', formData);
+      
+    //   // Redirect ke halaman register detail berdasarkan role
+    //   navigate(`/register-${formData.role}`, { 
+    //     state: { 
+    //       basicData: {
+    //         name: formData.name,
+    //         email: formData.email,
+    //         phone: formData.phone,
+    //         password: formData.password,
+    //         role: formData.role
+    //       }
+    //     } 
+    //   });
+    // }, 1000);
   };
 
   return (
