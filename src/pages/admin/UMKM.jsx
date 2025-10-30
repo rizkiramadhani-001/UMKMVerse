@@ -443,9 +443,9 @@ export function AdminUMKM() {
 }
 
 // Export all components
-export default {
-  AdminAnalytics,
-  AdminTransactions,
-  AdminUMKM
-};
+// export default {
+//   AdminAnalytics,
+//   AdminTransactions,
+//   AdminUMKM
+// };
               
