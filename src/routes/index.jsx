@@ -77,27 +77,27 @@ import SupplierSettings from '../pages/supplier/Settings';
 // ========================================
 // DISTRIBUTOR PAGES
 // ========================================
-import DistributorDashboard from '../pages/distributor/Dashboard';
-// TODO: Tambahkan nanti
-import DistributorOrders from '../pages/distributor/Orders';
-import DistributorTracking from '../pages/distributor/Tracking';
-import DistributorContracts from '../pages/distributor/Contracts';
-import DistributorChat from '../pages/distributor/Chat';
-import DistributorForum from '../pages/distributor/Forum';
-import DistributorSettings from '../pages/distributor/Settings';
+// import DistributorDashboard from '../pages/distributor/Dashboard';
+// // TODO: Tambahkan nanti
+// import DistributorOrders from '../pages/distributor/Orders';
+// import DistributorTracking from '../pages/distributor/Tracking';
+// import DistributorContracts from '../pages/distributor/Contracts';
+// import DistributorChat from '../pages/distributor/Chat';
+// import DistributorForum from '../pages/distributor/Forum';
+// import DistributorSettings from '../pages/distributor/Settings';
 
 // ========================================
 // ADMIN PAGES
 // ========================================
-import AdminDashboard from '../pages/admin/Dashboard';
-// TODO: Tambahkan nanti
-import AdminUsers from '../pages/admin/Users';
-import AdminUMKM from '../pages/admin/UMKM';
-import AdminVerification from '../pages/admin/Verification';
-import AdminTransactions from '../pages/admin/Transactions';
-import AdminForum from '../pages/admin/Forum';
-import AdminAnalytics from '../pages/admin/Analytics';
-import AdminSettings from '../pages/admin/Settings';
+// import AdminDashboard from '../pages/admin/Dashboard';
+// // TODO: Tambahkan nanti
+// import AdminUsers from '../pages/admin/Users';
+// import AdminUMKM from '../pages/admin/UMKM';
+// import AdminVerification from '../pages/admin/Verification';
+// import AdminTransactions from '../pages/admin/Transactions';
+// import AdminForum from '../pages/admin/Forum';
+// import AdminAnalytics from '../pages/admin/Analytics';
+// import AdminSettings from '../pages/admin/Settings';
 
 const router = createBrowserRouter([
   // ========================================
@@ -301,84 +301,84 @@ const router = createBrowserRouter([
   // ========================================
   // DISTRIBUTOR DASHBOARD ROUTES
   // ========================================
-  {
-    path: '/distributor-dashboard',
-    element: <DistributorLayout />,
-    children: [
-      {
-        index: true,
-        element: <DistributorDashboard />
-      },
-      // TODO: Uncomment ketika pages sudah dibuat
-      {
-        path: 'orders',
-        element: <DistributorOrders />
-      },
-      {
-        path: 'tracking',
-        element: <DistributorTracking />
-      },
-      {
-        path: 'contracts',
-        element: <DistributorContracts />
-      },
-      {
-        path: 'chat',
-        element: <DistributorChat />
-      },
-      {
-        path: 'forum',
-        element: <DistributorForum />
-      },
-      {
-        path: 'settings',
-        element: <DistributorSettings />
-      }
-    ]
-  },
+  // {
+  //   path: '/distributor-dashboard',
+  //   element: <DistributorLayout />,
+  //   children: [
+  //     {
+  //       index: true,
+  //       element: <DistributorDashboard />
+  //     },
+  //     // TODO: Uncomment ketika pages sudah dibuat
+  //     {
+  //       path: 'orders',
+  //       element: <DistributorOrders />
+  //     },
+  //     {
+  //       path: 'tracking',
+  //       element: <DistributorTracking />
+  //     },
+  //     {
+  //       path: 'contracts',
+  //       element: <DistributorContracts />
+  //     },
+  //     {
+  //       path: 'chat',
+  //       element: <DistributorChat />
+  //     },
+  //     {
+  //       path: 'forum',
+  //       element: <DistributorForum />
+  //     },
+  //     {
+  //       path: 'settings',
+  //       element: <DistributorSettings />
+  //     }
+  //   ]
+  // },
 
   // ========================================
   // ADMIN DASHBOARD ROUTES
   // ========================================
-  {
-    path: '/admin-dashboard',
-    element: <AdminLayout />,
-    children: [
-      {
-        index: true,
-        element: <AdminDashboard />
-      },
-      // TODO: Uncomment ketika pages sudah dibuat
-      {
-        path: 'users',
-        element: <AdminUsers />
-      },
-      {
-        path: 'umkm',
-        element: <AdminUMKM />
-      },
-      {
-        path: 'verification',
-        element: <AdminVerification />
-      },
-      {
-        path: 'transactions',
-        element: <AdminTransactions />
-      },
-      {
-        path: 'forum',
-        element: <AdminForum />
-      },
-      {
-        path: 'analytics',
-        element: <AdminAnalytics />
-      },
-      {
-        path: 'settings',
-        element: <AdminSettings />
-      }
-    ]
-  }
+  // {
+  //   path: '/admin-dashboard',
+  //   element: <AdminLayout />,
+  //   children: [
+  //     {
+  //       index: true,
+  //       element: <AdminDashboard />
+  //     },
+  //     // TODO: Uncomment ketika pages sudah dibuat
+  //     {
+  //       path: 'users',
+  //       element: <AdminUsers />
+  //     },
+  //     {
+  //       path: 'umkm',
+  //       element: <AdminUMKM />
+  //     },
+  //     {
+  //       path: 'verification',
+  //       element: <AdminVerification />
+  //     },
+  //     {
+  //       path: 'transactions',
+  //       element: <AdminTransactions />
+  //     },
+  //     {
+  //       path: 'forum',
+  //       element: <AdminForum />
+  //     },
+  //     {
+  //       path: 'analytics',
+  //       element: <AdminAnalytics />
+  //     },
+  //     {
+  //       path: 'settings',
+  //       element: <AdminSettings />
+  //     }
+  //   ]
+  // }
 ]);
 
 export default router;

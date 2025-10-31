@@ -2,15 +2,16 @@
 import { useState, useEffect } from 'react';
 import { Building2, MapPin, Phone, Mail, Globe, Upload, Video, Save, Eye, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import axios from 'axios';
 
 export default function UMKMProfile() {
   const [activeTab, setActiveTab] = useState('basic');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
-  const {search} = useLocation();
+  const [id, setId] = useState(null);
+  const { search } = useLocation();
   const queryParams = new URLSearchParams(search);
-  const id = queryParams.get('id');
 
 
   // ========================================
@@ -76,68 +77,55 @@ export default function UMKMProfile() {
     const fetchProfileData = async () => {
       try {
         setIsLoading(true);
-        
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/umkm/profile', {
-        //   method: 'GET',
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        //     'Content-Type': 'application/json'
-        //   }
-        // });
-        // const result = await response.json();
-        
-        // Simulasi data dari backend
-        const result = {
-          data: {
-            namaUmkm: 'Warung Kopi Nusantara',
-            nib: '1234567890123',
-            bidangUsaha: 'fnb',
-            email: 'info@warungkopi.com',
-            phone: '08123456789',
-            website: 'https://warungkopi.com',
-            lokasiUsaha: 'Jakarta Selatan, DKI Jakarta',
-            alamatLengkap: 'Jl. Mampang Prapatan Raya No. 123',
-            deskripsiSingkat: 'Kedai kopi dengan biji kopi pilihan dari berbagai daerah di Indonesia',
-            deskripsiLengkap: 'Warung Kopi Nusantara adalah kedai kopi yang menyajikan berbagai jenis kopi nusantara...',
-            visiMisi: 'Menjadi kedai kopi terdepan yang memperkenalkan kekayaan kopi nusantara kepada dunia',
-            targetPasar: 'Usia 20-45 tahun, pencinta kopi, profesional muda',
-            keunggulanProduk: 'Biji kopi 100% nusantara, Barista bersertifikat, Suasana cozy',
-            videoPitchUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            minInvestasi: 5000000,
-            targetInvestasi: 100000000,
-            logoUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop',
-            fotoProduk: [
-              'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
-              'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=300&fit=crop'
-            ]
-          }
-        };
 
-        // Set form data dari response
-        setFormData({
-          namaUmkm: result.data.namaUmkm || '',
-          nib: result.data.nib || '',
-          bidangUsaha: result.data.bidangUsaha || '',
-          email: result.data.email || '',
-          phone: result.data.phone || '',
-          website: result.data.website || '',
-          lokasiUsaha: result.data.lokasiUsaha || '',
-          alamatLengkap: result.data.alamatLengkap || '',
-          deskripsiSingkat: result.data.deskripsiSingkat || '',
-          deskripsiLengkap: result.data.deskripsiLengkap || '',
-          visiMisi: result.data.visiMisi || '',
-          targetPasar: result.data.targetPasar || '',
-          keunggulanProduk: result.data.keunggulanProduk || '',
-          videoPitchUrl: result.data.videoPitchUrl || '',
-          minInvestasi: result.data.minInvestasi || '',
-          targetInvestasi: result.data.targetInvestasi || '',
-          logo: null,
-          fotoProduk: []
+        const token = sessionStorage.getItem('token');
+        if (!token) {
+          setErrors({ auth: 'Token tidak ditemukan. Silakan login.' });
+          setIsLoading(false);
+          return;
+        }
+
+        // 🔹 Fetch data dari API berdasarkan user id atau UMKM id
+        const response = await axios.get(`http://127.0.0.1:8000/api/umkm/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
 
-        setLogoPreview(result.data.logoUrl);
-        setFotoPreview(result.data.fotoProduk || []);
+        const data = response.data.data;
+
+        console.log("Fetch successful:", data);
+
+        // 🔹 Set state id UMKM jika perlu
+        setId(data.id);
+
+        // 🔹 Set form data
+        setFormData({
+          namaUmkm: data.namaUmkm || '',
+          nib: data.nib || '',
+          bidangUsaha: data.bidangUsaha || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          website: data.website || '',
+          lokasiUsaha: data.lokasiUsaha || '',
+          alamatLengkap: data.alamatLengkap || '',
+          deskripsiSingkat: data.deskripsiSingkat || '',
+          deskripsiLengkap: data.deskripsiLengkap || '',
+          visiMisi: data.visiMisi || '',
+          targetPasar: data.targetPasar || '',
+          keunggulanProduk: data.keunggulanProduk || '',
+          videoPitchUrl: data.videoPitchUrl || '',
+          minInvestasi: data.minInvestasi || '',
+          targetInvestasi: data.targetInvestasi || '',
+          logo: "http://127.0.0.1:8000/storage/" + data.logo || null,
+          fotoProduk: [
+            'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
+            'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=300&fit=crop']
+        });
+
+        // 🔹 Set preview gambar
+        setLogoPreview(formData.logo || '');
+        setFotoPreview(formData.fotoProduk || []);
 
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -148,7 +136,14 @@ export default function UMKMProfile() {
     };
 
     fetchProfileData();
-  }, []);
+  }, [id]); // tambahkan dependency id jika id bisa berubah
+
+
+
+  useEffect(() => {
+    console.log(id)
+  }, [id]);
+
 
   const bidangUsahaOptions = [
     { id: 'fnb', name: 'Food & Beverage', icon: '🍔' },
@@ -164,44 +159,107 @@ export default function UMKMProfile() {
     }
   };
 
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file maksimal 2MB');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result);
-        setFormData(prev => ({ ...prev, logo: file }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Cek ukuran file
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran file maksimal 2MB');
+      return;
+    }
+
+    // --- Preview menggunakan FileReader ---
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLogoPreview(reader.result);
+      setFormData(prev => ({ ...prev, logo: file }));
+    };
+    reader.readAsDataURL(file);
+
+    // --- Upload ke backend ---
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('logo', file);
+      if (id) formDataToSend.append('id', id); // opsional, kalau update
+
+      const response = await axios.post(
+        'http://127.0.0.1:8000/api/umkm', // endpoint create/update UMKM
+        formDataToSend,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      console.log('Logo uploaded successfully:', response.data);
+      // Opsional: update formData dengan data dari backend
+      setFormData(prev => ({
+        ...prev,
+        logo: response.data.data.logo, // jika backend mengembalikan path file
+      }));
+
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert('Gagal mengunggah logo');
     }
   };
 
-  const handleFotoUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (fotoPreview.length + files.length > 5) {
-      alert('Maksimal 5 foto produk');
-      return;
+
+const handleFotoUpload = async (e) => {
+  const files = Array.from(e.target.files);
+
+  if (fotoPreview.length + files.length > 5) {
+    alert('Maksimal 5 foto produk');
+    return;
+  }
+
+  for (const file of files) {
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran file maksimal 2MB per foto');
+      continue; // skip file yang terlalu besar
     }
-    files.forEach(file => {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file maksimal 2MB per foto');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFotoPreview(prev => [...prev, reader.result]);
-        setFormData(prev => ({ 
-          ...prev, 
-          fotoProduk: [...prev.fotoProduk, file] 
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
-  };
+
+    // --- Preview ---
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFotoPreview(prev => [...prev, reader.result]);
+    };
+    reader.readAsDataURL(file);
+
+    // --- Upload ke backend ---
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('fotoProduk[]', file);
+      if (id) formDataToSend.append('id', id); // opsional, untuk update UMKM
+
+      const response = await axios.post(
+        'http://127.0.0.1:8000/api/umkm', // endpoint create/update UMKM
+        formDataToSend,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      console.log('Foto uploaded successfully:', response.data);
+      // Jika backend mengembalikan array path foto, update formData
+      setFormData(prev => ({
+        ...prev,
+        fotoProduk: [...prev.fotoProduk, response.data.data.fotoProduk?.[0] || file]
+      }));
+
+    } catch (error) {
+      console.error('Error uploading foto:', error);
+      alert('Gagal mengunggah foto: ' + file.name);
+    }
+  }
+};
+
 
   const removeFoto = (index) => {
     setFotoPreview(prev => prev.filter((_, i) => i !== index));
@@ -232,6 +290,13 @@ export default function UMKMProfile() {
     setSuccessMessage('');
 
     try {
+      axios.post("http://127.0.0.1:8000/api/umkm", formData, {
+        headers: {
+          Authorization: `Bearer ` + sessionStorage.getItem('token'),
+        }
+      }).then(response => {
+        console.log("Update successful:", response.data);
+      })
       // TODO: Replace with actual API call
       // Gunakan FormData untuk upload file
       // const formDataToSend = new FormData();
@@ -246,7 +311,7 @@ export default function UMKMProfile() {
       //     formDataToSend.append(key, formData[key]);
       //   }
       // });
-      
+
       // const response = await fetch('/api/umkm/profile', {
       //   method: 'PUT',
       //   headers: {
@@ -255,18 +320,18 @@ export default function UMKMProfile() {
       //   },
       //   body: formDataToSend
       // });
-      
+
       // const result = await response.json();
-      
+
       // if (!response.ok) {
       //   throw new Error(result.message || 'Gagal update profil');
       // }
 
       // Simulasi API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       setSuccessMessage('✅ Profil berhasil diperbarui!');
-      
+
       // Hide success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage('');
@@ -346,11 +411,10 @@ export default function UMKMProfile() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-3 rounded-xl font-semibold transition ${
-                  activeTab === tab.id
+                className={`flex items-center space-x-2 px-4 py-3 rounded-xl font-semibold transition ${activeTab === tab.id
                     ? 'bg-blue-50 text-blue-600'
                     : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 {tab.icon}
                 <span>{tab.label}</span>
@@ -374,9 +438,8 @@ export default function UMKMProfile() {
                     name="namaUmkm"
                     value={formData.namaUmkm}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                      errors.namaUmkm ? 'border-red-300' : 'border-gray-200'
-                    }`}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${errors.namaUmkm ? 'border-red-300' : 'border-gray-200'
+                      }`}
                     placeholder="Nama usaha UMKM"
                   />
                   {errors.namaUmkm && (
@@ -414,11 +477,10 @@ export default function UMKMProfile() {
                       key={bidang.id}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, bidangUsaha: bidang.id }))}
-                      className={`p-4 border-2 rounded-xl transition-all ${
-                        formData.bidangUsaha === bidang.id
+                      className={`p-4 border-2 rounded-xl transition-all ${formData.bidangUsaha === bidang.id
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-200 hover:border-blue-300'
-                      }`}
+                        }`}
                     >
                       <div className="text-3xl mb-2">{bidang.icon}</div>
                       <div className="font-semibold text-sm">{bidang.name}</div>
@@ -458,9 +520,8 @@ export default function UMKMProfile() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                        errors.phone ? 'border-red-300' : 'border-gray-200'
-                      }`}
+                      className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${errors.phone ? 'border-red-300' : 'border-gray-200'
+                        }`}
                       placeholder="08123456789"
                     />
                   </div>
@@ -498,9 +559,8 @@ export default function UMKMProfile() {
                       name="lokasiUsaha"
                       value={formData.lokasiUsaha}
                       onChange={handleChange}
-                      className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                        errors.lokasiUsaha ? 'border-red-300' : 'border-gray-200'
-                      }`}
+                      className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${errors.lokasiUsaha ? 'border-red-300' : 'border-gray-200'
+                        }`}
                       placeholder="Kota, Provinsi"
                     />
                   </div>
@@ -682,9 +742,8 @@ export default function UMKMProfile() {
                   value={formData.deskripsiSingkat}
                   onChange={handleChange}
                   rows="2"
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                    errors.deskripsiSingkat ? 'border-red-300' : 'border-gray-200'
-                  }`}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${errors.deskripsiSingkat ? 'border-red-300' : 'border-gray-200'
+                    }`}
                   placeholder="Deskripsi singkat untuk card preview (max 200 karakter)"
                   maxLength="200"
                 />
@@ -767,9 +826,8 @@ export default function UMKMProfile() {
             <button
               type="submit"
               disabled={isSaving}
-              className={`flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-lg transition ${
-                isSaving ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className={`flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-lg transition ${isSaving ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
             >
               <Save size={20} />
               <span>{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
