@@ -69,6 +69,7 @@ import SupplierDashboard from '../pages/supplier/Dashboard';
 // TODO: Tambahkan nanti
 import SupplierOrders from '../pages/supplier/Orders';
 import SupplierProducts from '../pages/supplier/Products';
+import ProductForm from '../pages/supplier/ProductForm'; 
 import SupplierContracts from '../pages/supplier/Contracts';
 import SupplierChat from '../pages/supplier/Chat';
 import SupplierForum from '../pages/supplier/Forum';
@@ -289,6 +290,10 @@ const router = createBrowserRouter([
       {
         path: 'chat',
         element: <SupplierChat />
+      },
+      {
+        path: 'product-form',
+        element: <ProductForm />
       },
       {
         path: 'forum',

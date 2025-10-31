@@ -1,4 +1,5 @@
 // src/pages/supplier/Products.jsx
+import ProductForm from '../../pages/supplier/ProductForm';
 import { useState, useEffect } from 'react';
 import {
   Package,
@@ -6,19 +7,12 @@ import {
   Edit,
   Trash2,
   Search,
-  Filter,
   Eye,
   EyeOff,
   AlertCircle,
   CheckCircle,
   TrendingUp,
-  DollarSign,
-  Box,
-  BarChart3,
-  Image as ImageIcon,
-  X,
-  Save,
-  Upload
+  X
 } from 'lucide-react';
 
 export default function SupplierProducts() {
@@ -33,21 +27,6 @@ export default function SupplierProducts() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState(null);
-
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    category: '',
-    description: '',
-    price: '',
-    unit: '',
-    stock: '',
-    minOrder: '',
-    images: [],
-    status: 'active'
-  });
-  const [formErrors, setFormErrors] = useState({});
-  const [imagePreview, setImagePreview] = useState([]);
 
   // ==================== BACKEND INTEGRATION ====================
   // TODO: Integrate dengan backend - Fetch Products
@@ -166,16 +145,6 @@ export default function SupplierProducts() {
     const fetchCategories = async () => {
       try {
         // TODO: Replace dengan API call ke backend
-        // const response = await fetch('/api/supplier/product-categories', {
-        //   method: 'GET',
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        //     'Content-Type': 'application/json'
-        //   }
-        // });
-        // const data = await response.json();
-        // setCategories(data.categories);
-
         // Dummy data - hapus setelah integrate
         setCategories([
           { id: 'bahan-baku', name: 'Bahan Baku', count: 15 },
@@ -196,16 +165,6 @@ export default function SupplierProducts() {
     const fetchStats = async () => {
       try {
         // TODO: Replace dengan API call ke backend
-        // const response = await fetch('/api/supplier/products/stats', {
-        //   method: 'GET',
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        //     'Content-Type': 'application/json'
-        //   }
-        // });
-        // const data = await response.json();
-        // setStats(data);
-
         // Dummy data - hapus setelah integrate
         setStats({
           totalProducts: 48,
@@ -223,11 +182,7 @@ export default function SupplierProducts() {
   }, []);
 
   // TODO: Integrate dengan backend - Create Product
-  const handleCreateProduct = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
+  const handleCreateProduct = async (formData) => {
     setIsLoading(true);
     try {
       // TODO: Replace dengan API call ke backend
@@ -257,7 +212,6 @@ export default function SupplierProducts() {
       //   const data = await response.json();
       //   alert('✅ Produk berhasil ditambahkan!');
       //   setShowAddModal(false);
-      //   resetForm();
       //   // Refresh products list
       //   fetchProducts();
       // } else {
@@ -268,7 +222,6 @@ export default function SupplierProducts() {
       setTimeout(() => {
         alert('✅ Produk berhasil ditambahkan!');
         setShowAddModal(false);
-        resetForm();
         // Simulasi refresh - nanti pakai fetchProducts()
         window.location.reload();
       }, 1500);
@@ -281,11 +234,7 @@ export default function SupplierProducts() {
   };
 
   // TODO: Integrate dengan backend - Update Product
-  const handleUpdateProduct = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
+  const handleUpdateProduct = async (formData) => {
     setIsLoading(true);
     try {
       // TODO: Replace dengan API call ke backend
@@ -313,7 +262,6 @@ export default function SupplierProducts() {
       // if (response.ok) {
       //   alert('✅ Produk berhasil diupdate!');
       //   setShowEditModal(false);
-      //   resetForm();
       //   fetchProducts();
       // }
 
@@ -321,7 +269,7 @@ export default function SupplierProducts() {
       setTimeout(() => {
         alert('✅ Produk berhasil diupdate!');
         setShowEditModal(false);
-        resetForm();
+        setSelectedProduct(null);
       }, 1500);
     } catch (error) {
       console.error('Error updating product:', error);
@@ -393,97 +341,6 @@ export default function SupplierProducts() {
   };
   // ============================================================
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (formErrors[name]) {
-      setFormErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    
-    if (imagePreview.length + files.length > 5) {
-      alert('Maksimal 5 foto produk');
-      return;
-    }
-
-    files.forEach(file => {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file maksimal 2MB');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(prev => [...prev, reader.result]);
-        setFormData(prev => ({
-          ...prev,
-          images: [...prev.images, file]
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeImage = (index) => {
-    setImagePreview(prev => prev.filter((_, i) => i !== index));
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
-  };
-
-  const validateForm = () => {
-    const errors = {};
-
-    if (!formData.name.trim()) errors.name = 'Nama produk wajib diisi';
-    if (!formData.category) errors.category = 'Kategori wajib dipilih';
-    if (!formData.description.trim()) errors.description = 'Deskripsi wajib diisi';
-    if (!formData.price || formData.price <= 0) errors.price = 'Harga harus lebih dari 0';
-    if (!formData.unit.trim()) errors.unit = 'Satuan wajib diisi';
-    if (!formData.stock || formData.stock < 0) errors.stock = 'Stok tidak boleh negatif';
-    if (!formData.minOrder || formData.minOrder <= 0) errors.minOrder = 'Minimal order harus lebih dari 0';
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      category: '',
-      description: '',
-      price: '',
-      unit: '',
-      stock: '',
-      minOrder: '',
-      images: [],
-      status: 'active'
-    });
-    setFormErrors({});
-    setImagePreview([]);
-    setSelectedProduct(null);
-  };
-
-  const openEditModal = (product) => {
-    setSelectedProduct(product);
-    setFormData({
-      name: product.name,
-      category: product.category,
-      description: product.description,
-      price: product.price,
-      unit: product.unit,
-      stock: product.stock,
-      minOrder: product.minOrder,
-      images: [],
-      status: product.status
-    });
-    setImagePreview(product.image ? [product.image] : []);
-    setShowEditModal(true);
-  };
-
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -499,6 +356,22 @@ export default function SupplierProducts() {
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Prepare initial data for edit
+  const getInitialDataForEdit = (product) => {
+    return {
+      name: product.name,
+      category: product.category,
+      description: product.description,
+      price: product.price,
+      unit: product.unit,
+      stock: product.stock,
+      minOrder: product.minOrder,
+      images: [],
+      image: product.image, // Keep existing image
+      status: product.status
+    };
+  };
 
   return (
     <div className="space-y-6">
@@ -719,7 +592,10 @@ export default function SupplierProducts() {
                     )}
                   </button>
                   <button
-                    onClick={() => openEditModal(product)}
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setShowEditModal(true);
+                    }}
                     className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
                   >
                     <Edit size={18} />
@@ -741,307 +617,23 @@ export default function SupplierProducts() {
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-3xl w-full my-8">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl flex items-center justify-between z-10">
               <h3 className="text-2xl font-bold text-gray-900">Tambah Produk Baru</h3>
               <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  resetForm();
-                }}
+                onClick={() => setShowAddModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateProduct} className="p-6">
-              <div className="space-y-6">
-                {/* Product Images */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Foto Produk <span className="text-red-500">*</span>
-                    <span className="text-gray-500 font-normal ml-2">(Maksimal 5 foto)</span>
-                  </label>
-                  
-                  <div className="grid grid-cols-5 gap-4">
-                    {imagePreview.map((preview, index) => (
-                      <div key={index} className="relative aspect-square">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                    
-                    {imagePreview.length < 5 && (
-                      <div
-                        onClick={() => document.getElementById('imageUpload').click()}
-                        className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center hover:border-orange-400 transition cursor-pointer"
-                      >
-                        <Upload className="text-gray-400 mb-2" size={24} />
-                        <p className="text-xs text-gray-500 text-center">Upload</p>
-                        <input
-                          type="file"
-                          id="imageUpload"
-                          className="hidden"
-                          accept="image/png,image/jpeg,image/jpg"
-                          multiple
-                          onChange={handleImageUpload}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Product Name */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nama Produk <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                      formErrors.name ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                    placeholder="Contoh: Biji Kopi Arabica Premium"
-                  />
-                  {formErrors.name && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                      <AlertCircle size={14} />
-                      <span>{formErrors.name}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Kategori <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                      formErrors.category ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                  >
-                    <option value="">-- Pilih Kategori --</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                  {formErrors.category && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                      <AlertCircle size={14} />
-                      <span>{formErrors.category}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Deskripsi Produk <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    rows="4"
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                      formErrors.description ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                    placeholder="Jelaskan detail produk, spesifikasi, kualitas, dll..."
-                  />
-                  {formErrors.description && (
-                    <p className="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                      <AlertCircle size={14} />
-                      <span>{formErrors.description}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Price & Unit */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Harga (Rp) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.price ? 'border-red-300' : 'border-gray-200'
-                      }`}
-                      placeholder="0"
-                      min="0"
-                    />
-                    {formErrors.price && (
-                      <p className="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                        <AlertCircle size={14} />
-                        <span>{formErrors.price}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Satuan <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="unit"
-                      value={formData.unit}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.unit ? 'border-red-300' : 'border-gray-200'
-                      }`}
-                      placeholder="kg, liter, pcs, dll"
-                    />
-                    {formErrors.unit && (
-                      <p className="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                        <AlertCircle size={14} />
-                        <span>{formErrors.unit}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Stock & Min Order */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Stok Tersedia <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="stock"
-                      value={formData.stock}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.stock ? 'border-red-300' : 'border-gray-200'
-                      }`}
-                      placeholder="0"
-                      min="0"
-                    />
-                    {formErrors.stock && (
-                      <p className="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                        <AlertCircle size={14} />
-                        <span>{formErrors.stock}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Minimal Order <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="minOrder"
-                      value={formData.minOrder}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                        formErrors.minOrder ? 'border-red-300' : 'border-gray-200'
-                      }`}
-                      placeholder="0"
-                      min="1"
-                    />
-                    {formErrors.minOrder && (
-                      <p className="text-red-600 text-sm mt-1 flex items-center space-x-1">
-                        <AlertCircle size={14} />
-                        <span>{formErrors.minOrder}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Status Produk
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="status"
-                        value="active"
-                        checked={formData.status === 'active'}
-                        onChange={handleChange}
-                        className="w-4 h-4 text-orange-600 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-gray-700">Aktif</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="status"
-                        value="inactive"
-                        checked={formData.status === 'inactive'}
-                        onChange={handleChange}
-                        className="w-4 h-4 text-orange-600 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-gray-700">Nonaktif</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Info Box */}
-                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                  <div className="flex items-start space-x-2">
-                    <AlertCircle className="text-orange-600 flex-shrink-0 mt-0.5" size={18} />
-                    <div className="text-xs text-gray-700">
-                      <p className="font-semibold mb-1">Tips:</p>
-                      <ul className="space-y-1 list-disc list-inside">
-                        <li>Gunakan foto produk yang jelas dan berkualitas</li>
-                        <li>Tulis deskripsi lengkap untuk menarik pembeli</li>
-                        <li>Set minimal order yang realistis</li>
-                        <li>Update stok secara berkala</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex space-x-3 mt-8">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    resetForm();
-                  }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl font-semibold hover:shadow-lg transition ${
-                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <Save size={20} />
-                  <span>{isLoading ? 'Menyimpan...' : 'Simpan Produk'}</span>
-                </button>
-              </div>
-            </form>
+            <ProductForm
+              mode="create"
+              categories={categories}
+              onSubmit={handleCreateProduct}
+              onCancel={() => setShowAddModal(false)}
+              isLoading={isLoading}
+            />
           </div>
         </div>
       )}
@@ -1050,12 +642,12 @@ export default function SupplierProducts() {
       {showEditModal && selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-3xl w-full my-8">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl flex items-center justify-between z-10">
               <h3 className="text-2xl font-bold text-gray-900">Edit Produk</h3>
               <button
                 onClick={() => {
                   setShowEditModal(false);
-                  resetForm();
+                  setSelectedProduct(null);
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition"
               >
@@ -1063,216 +655,17 @@ export default function SupplierProducts() {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateProduct} className="p-6">
-              <div className="space-y-6">
-                {/* Product Images */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    Foto Produk <span className="text-red-500">*</span>
-                  </label>
-                  
-                  <div className="grid grid-cols-5 gap-4">
-                    {imagePreview.map((preview, index) => (
-                      <div key={index} className="relative aspect-square">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                    
-                    {imagePreview.length < 5 && (
-                      <div
-                        onClick={() => document.getElementById('imageUploadEdit').click()}
-                        className="aspect-square border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center hover:border-orange-400 transition cursor-pointer"
-                      >
-                        <Upload className="text-gray-400 mb-2" size={24} />
-                        <p className="text-xs text-gray-500 text-center">Upload</p>
-                        <input
-                          type="file"
-                          id="imageUploadEdit"
-                          className="hidden"
-                          accept="image/png,image/jpeg,image/jpg"
-                          multiple
-                          onChange={handleImageUpload}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Same form fields as Add Modal */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nama Produk <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                      formErrors.name ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                  />
-                  {formErrors.name && (
-                    <p className="text-red-600 text-sm mt-1">{formErrors.name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Kategori <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                      formErrors.category ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                  >
-                    <option value="">-- Pilih Kategori --</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Deskripsi Produk <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    rows="4"
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                      formErrors.description ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Harga (Rp) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Satuan <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="unit"
-                      value={formData.unit}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Stok Tersedia <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="stock"
-                      value={formData.stock}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Minimal Order <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="minOrder"
-                      value={formData.minOrder}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      min="1"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Status Produk
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="status"
-                        value="active"
-                        checked={formData.status === 'active'}
-                        onChange={handleChange}
-                        className="w-4 h-4 text-orange-600"
-                      />
-                      <span className="text-sm text-gray-700">Aktif</span>
-                    </label>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="status"
-                        value="inactive"
-                        checked={formData.status === 'inactive'}
-                        onChange={handleChange}
-                        className="w-4 h-4 text-orange-600"
-                      />
-                      <span className="text-sm text-gray-700">Nonaktif</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex space-x-3 mt-8">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    resetForm();
-                  }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-xl font-semibold hover:shadow-lg transition ${
-                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <Save size={20} />
-                  <span>{isLoading ? 'Menyimpan...' : 'Update Produk'}</span>
-                </button>
-              </div>
-            </form>
+            <ProductForm
+              mode="edit"
+              initialData={getInitialDataForEdit(selectedProduct)}
+              categories={categories}
+              onSubmit={handleUpdateProduct}
+              onCancel={() => {
+                setShowEditModal(false);
+                setSelectedProduct(null);
+              }}
+              isLoading={isLoading}
+            />
           </div>
         </div>
       )}

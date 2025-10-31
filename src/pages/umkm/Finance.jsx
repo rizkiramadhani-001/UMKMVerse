@@ -1,5 +1,6 @@
 // src/pages/umkm/Finance.jsx
 import { useState, useEffect } from 'react';
+import TransactionForm from '../../pages/umkm/TransactionForm';
 import {
   TrendingUp,
   TrendingDown,
@@ -10,7 +11,9 @@ import {
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
-  Filter
+  X,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import {
   LineChart,
@@ -24,74 +27,30 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer
 } from 'recharts';
 
 export default function UMKMFinance() {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
 
-  // ========================================
-  // 🔴 BACKEND INTEGRATION POINT #1: STATE UNTUK DATA KEUANGAN
-  // ========================================
-  // Data ini akan di-fetch dari backend
+  // State untuk data keuangan
   const [stats, setStats] = useState([]);
   const [revenueExpensesData, setRevenueExpensesData] = useState([]);
   const [expenseBreakdown, setExpenseBreakdown] = useState([]);
   const [cashFlowData, setCashFlowData] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
 
-  // ========================================
-  // 🔴 BACKEND INTEGRATION POINT #2: FETCH DATA KEUANGAN
-  // ========================================
+  // Fetch data keuangan
   useEffect(() => {
     const fetchFinanceData = async () => {
       try {
         setIsLoading(true);
 
         // TODO: Replace dengan API call ke backend
-        // Endpoint: GET /api/umkm/finance?period={selectedPeriod}
-        // Headers: Authorization: Bearer {token}
-        // Response format:
-        // {
-        //   stats: {
-        //     totalRevenue: { value: number, change: number, isPositive: boolean },
-        //     totalExpenses: { value: number, change: number, isPositive: boolean },
-        //     netProfit: { value: number, change: number, isPositive: boolean },
-        //     profitMargin: { value: number, change: number, isPositive: boolean }
-        //   },
-        //   revenueExpenses: [
-        //     { month: string, revenue: number, expenses: number }
-        //   ],
-        //   expenseBreakdown: [
-        //     { name: string, value: number }
-        //   ],
-        //   cashFlow: [
-        //     { date: string, amount: number }
-        //   ],
-        //   transactions: [
-        //     { 
-        //       id: string, 
-        //       type: 'income' | 'expense',
-        //       description: string,
-        //       amount: number,
-        //       date: string,
-        //       category: string
-        //     }
-        //   ]
-        // }
-
-        // const response = await fetch(`/api/umkm/finance?period=${selectedPeriod}`, {
-        //   method: 'GET',
-        //   headers: {
-        //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        //     'Content-Type': 'application/json'
-        //   }
-        // });
-        // const result = await response.json();
-
-        // Simulasi response dari backend
         const result = {
           stats: {
             totalRevenue: { value: 125000000, change: 12.5, isPositive: true },
@@ -130,45 +89,49 @@ export default function UMKMFinance() {
               type: 'income',
               description: 'Penjualan Produk - Batch #45',
               amount: 5500000,
-              date: '30 Jul 2024',
-              category: 'Revenue'
+              date: '2024-07-30',
+              category: 'Revenue',
+              notes: ''
             },
             {
               id: 'TRX-002',
               type: 'expense',
               description: 'Pembelian Bahan Baku',
               amount: 3200000,
-              date: '29 Jul 2024',
-              category: 'Bahan Baku'
+              date: '2024-07-29',
+              category: 'Bahan Baku',
+              notes: ''
             },
             {
               id: 'TRX-003',
               type: 'income',
               description: 'Investasi dari John Doe',
               amount: 10000000,
-              date: '28 Jul 2024',
-              category: 'Investment'
+              date: '2024-07-28',
+              category: 'Investment',
+              notes: ''
             },
             {
               id: 'TRX-004',
               type: 'expense',
               description: 'Gaji Karyawan Bulan Juli',
               amount: 8500000,
-              date: '27 Jul 2024',
-              category: 'Gaji'
+              date: '2024-07-27',
+              category: 'Gaji',
+              notes: ''
             },
             {
               id: 'TRX-005',
               type: 'income',
               description: 'Penjualan Produk - Batch #44',
               amount: 4800000,
-              date: '26 Jul 2024',
-              category: 'Revenue'
+              date: '2024-07-26',
+              category: 'Revenue',
+              notes: ''
             }
           ]
         };
 
-        // Set state dari response
         const statsArray = [
           {
             title: 'Total Revenue',
@@ -207,7 +170,6 @@ export default function UMKMFinance() {
         setStats(statsArray);
         setRevenueExpensesData(result.revenueExpenses);
         
-        // Add colors to expense breakdown
         const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#6B7280'];
         const expenseWithColors = result.expenseBreakdown.map((item, index) => ({
           ...item,
@@ -226,7 +188,126 @@ export default function UMKMFinance() {
     };
 
     fetchFinanceData();
-  }, [selectedPeriod]); // Re-fetch saat period berubah
+  }, [selectedPeriod]);
+
+  // ========================================
+  // BACKEND INTEGRATION: Create Transaction
+  // ========================================
+  const handleCreateTransaction = async (formData) => {
+    setIsLoading(true);
+    try {
+      // TODO: Replace dengan API call
+      // const response = await fetch('/api/umkm/transactions', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify(formData)
+      // });
+      // 
+      // if (response.ok) {
+      //   alert('✅ Transaksi berhasil ditambahkan!');
+      //   setShowAddModal(false);
+      //   // Refresh data
+      //   fetchFinanceData();
+      // }
+
+      // Simulasi
+      setTimeout(() => {
+        const newTransaction = {
+          id: `TRX-${String(recentTransactions.length + 1).padStart(3, '0')}`,
+          ...formData
+        };
+        setRecentTransactions([newTransaction, ...recentTransactions]);
+        alert('✅ Transaksi berhasil ditambahkan!');
+        setShowAddModal(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      alert('❌ Gagal menambahkan transaksi');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ========================================
+  // BACKEND INTEGRATION: Update Transaction
+  // ========================================
+  const handleUpdateTransaction = async (formData) => {
+    setIsLoading(true);
+    try {
+      // TODO: Replace dengan API call
+      // const response = await fetch(`/api/umkm/transactions/${selectedTransaction.id}`, {
+      //   method: 'PUT',
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify(formData)
+      // });
+      // 
+      // if (response.ok) {
+      //   alert('✅ Transaksi berhasil diupdate!');
+      //   setShowEditModal(false);
+      //   setSelectedTransaction(null);
+      //   fetchFinanceData();
+      // }
+
+      // Simulasi
+      setTimeout(() => {
+        setRecentTransactions(recentTransactions.map(trx => 
+          trx.id === selectedTransaction.id ? { ...trx, ...formData } : trx
+        ));
+        alert('✅ Transaksi berhasil diupdate!');
+        setShowEditModal(false);
+        setSelectedTransaction(null);
+      }, 1000);
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      alert('❌ Gagal mengupdate transaksi');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ========================================
+  // BACKEND INTEGRATION: Delete Transaction
+  // ========================================
+  const handleDeleteTransaction = async (transactionId) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
+    
+    try {
+      // TODO: Replace dengan API call
+      // const response = await fetch(`/api/umkm/transactions/${transactionId}`, {
+      //   method: 'DELETE',
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
+      //   }
+      // });
+      // 
+      // if (response.ok) {
+      //   alert('✅ Transaksi berhasil dihapus!');
+      //   fetchFinanceData();
+      // }
+
+      // Simulasi
+      setRecentTransactions(recentTransactions.filter(trx => trx.id !== transactionId));
+      alert('✅ Transaksi berhasil dihapus!');
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      alert('❌ Gagal menghapus transaksi');
+    }
+  };
+
+  const handleExportReport = async () => {
+    try {
+      // TODO: API call untuk export
+      alert('Export report feature - integrate with backend');
+    } catch (error) {
+      console.error('Error exporting report:', error);
+    }
+  };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('id-ID', {
@@ -234,6 +315,15 @@ export default function UMKMFinance() {
       currency: 'IDR',
       minimumFractionDigits: 0
     }).format(value);
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', { 
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
   };
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -262,39 +352,8 @@ export default function UMKMFinance() {
     return colors[color] || colors.blue;
   };
 
-  // ========================================
-  // 🔴 BACKEND INTEGRATION POINT #3: EXPORT REPORT
-  // ========================================
-  const handleExportReport = async () => {
-    try {
-      // TODO: Replace dengan API call
-      // Endpoint: GET /api/umkm/finance/export?period={selectedPeriod}&format=pdf
-      // Headers: Authorization: Bearer {token}
-      // Response: File download (PDF/Excel)
-      
-      // const response = await fetch(`/api/umkm/finance/export?period=${selectedPeriod}&format=pdf`, {
-      //   method: 'GET',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
-      // const blob = await response.blob();
-      // const url = window.URL.createObjectURL(blob);
-      // const a = document.createElement('a');
-      // a.href = url;
-      // a.download = `finance-report-${selectedPeriod}.pdf`;
-      // document.body.appendChild(a);
-      // a.click();
-      // window.URL.revokeObjectURL(url);
-      
-      alert('Export report feature - integrate with backend');
-    } catch (error) {
-      console.error('Error exporting report:', error);
-    }
-  };
-
   // Loading state
-  if (isLoading) {
+  if (isLoading && !showAddModal && !showEditModal) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -489,7 +548,10 @@ export default function UMKMFinance() {
             <h2 className="text-xl font-bold text-gray-900">Transaksi Terbaru</h2>
             <p className="text-sm text-gray-600 mt-1">{recentTransactions.length} transaksi terakhir</p>
           </div>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+          >
             <Plus size={20} />
             <span>Tambah Transaksi</span>
           </button>
@@ -503,6 +565,7 @@ export default function UMKMFinance() {
                 <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Kategori</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Tanggal</th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-700 text-sm">Amount</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-700 text-sm">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -524,7 +587,7 @@ export default function UMKMFinance() {
                   <td className="py-4 px-4">
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar size={16} />
-                      <span>{trx.date}</span>
+                      <span>{formatDate(trx.date)}</span>
                     </div>
                   </td>
                   <td className="py-4 px-4 text-right">
@@ -533,6 +596,25 @@ export default function UMKMFinance() {
                     }`}>
                       {trx.type === 'income' ? '+' : '-'}{formatCurrency(trx.amount)}
                     </span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center justify-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedTransaction(trx);
+                          setShowEditModal(true);
+                        }}
+                        className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTransaction(trx.id)}
+                        className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -543,6 +625,61 @@ export default function UMKMFinance() {
           Lihat Semua Transaksi →
         </button>
       </div>
+
+      {/* Add Transaction Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full my-8">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl flex items-center justify-between z-10">
+              <h3 className="text-2xl font-bold text-gray-900">Tambah Transaksi Baru</h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <TransactionForm
+              mode="create"
+              onSubmit={handleCreateTransaction}
+              onCancel={() => setShowAddModal(false)}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Transaction Modal */}
+      {showEditModal && selectedTransaction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full my-8">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl flex items-center justify-between z-10">
+              <h3 className="text-2xl font-bold text-gray-900">Edit Transaksi</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedTransaction(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <TransactionForm
+              mode="edit"
+              initialData={selectedTransaction}
+              onSubmit={handleUpdateTransaction}
+              onCancel={() => {
+                setShowEditModal(false);
+                setSelectedTransaction(null);
+              }}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
-}   
+}
