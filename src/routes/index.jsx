@@ -304,84 +304,84 @@ const router = createBrowserRouter([
   // ========================================
   // DISTRIBUTOR DASHBOARD ROUTES
   // ========================================
-  {
-    path: '/distributor-dashboard',
-    element: <DistributorLayout />,
-    children: [
-      {
-        index: true,
-        element: <DistributorDashboard />
-      },
-      // TODO: Uncomment ketika pages sudah dibuat
-      {
-        path: 'orders',
-        element: <DistributorOrders />
-      },
-      {
-        path: 'tracking',
-        element: <DistributorTracking />
-      },
-      {
-        path: 'contracts',
-        element: <DistributorContracts />
-      },
-      {
-        path: 'chat',
-        element: <DistributorChat />
-      },
-      {
-        path: 'forum',
-        element: <DistributorForum />
-      },
-      {
-        path: 'settings',
-        element: <DistributorSettings />
-      }
-    ]
-  },
+  // {
+  //   path: '/distributor-dashboard',
+  //   element: <DistributorLayout />,
+  //   children: [
+  //     {
+  //       index: true,
+  //       element: <DistributorDashboard />
+  //     },
+  //     // TODO: Uncomment ketika pages sudah dibuat
+  //     {
+  //       path: 'orders',
+  //       element: <DistributorOrders />
+  //     },
+  //     {
+  //       path: 'tracking',
+  //       element: <DistributorTracking />
+  //     },
+  //     {
+  //       path: 'contracts',
+  //       element: <DistributorContracts />
+  //     },
+  //     {
+  //       path: 'chat',
+  //       element: <DistributorChat />
+  //     },
+  //     {
+  //       path: 'forum',
+  //       element: <DistributorForum />
+  //     },
+  //     {
+  //       path: 'settings',
+  //       element: <DistributorSettings />
+  //     }
+  //   ]
+  // },
 
   // ========================================
   // ADMIN DASHBOARD ROUTES
   // ========================================
-  {
-    path: '/admin-dashboard',
-    element: <AdminLayout />,
-    children: [
-      {
-        index: true,
-        element: <AdminDashboard />
-      },
-      // TODO: Uncomment ketika pages sudah dibuat
-      {
-        path: 'users',
-        element: <AdminUsers />
-      },
-      {
-        path: 'umkm',
-        element: <AdminUMKM />
-      },
-      {
-        path: 'verification',
-        element: <AdminVerification />
-      },
-      {
-        path: 'transactions',
-        element: <AdminTransactions />
-      },
-      {
-        path: 'forum',
-        element: <AdminForum />
-      },
-      {
-        path: 'analytics',
-        element: <AdminAnalytics />
-      },
-      {
-        path: 'settings',
-        element: <AdminSettings />
-      }
-    ]
-  }
+  // {
+  //   path: '/admin-dashboard',
+  //   element: <AdminLayout />,
+  //   children: [
+  //     {
+  //       index: true,
+  //       element: <AdminDashboard />
+  //     },
+  //     // TODO: Uncomment ketika pages sudah dibuat
+  //     {
+  //       path: 'users',
+  //       element: <AdminUsers />
+  //     },
+  //     {
+  //       path: 'umkm',
+  //       element: <AdminUMKM />
+  //     },
+  //     {
+  //       path: 'verification',
+  //       element: <AdminVerification />
+  //     },
+  //     {
+  //       path: 'transactions',
+  //       element: <AdminTransactions />
+  //     },
+  //     {
+  //       path: 'forum',
+  //       element: <AdminForum />
+  //     },
+  //     {
+  //       path: 'analytics',
+  //       element: <AdminAnalytics />
+  //     },
+  //     {
+  //       path: 'settings',
+  //       element: <AdminSettings />
+  //     }
+  //   ]
+  // }
 ]);
 
 export default router;
