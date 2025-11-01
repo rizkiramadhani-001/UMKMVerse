@@ -32,17 +32,24 @@ Before you begin, ensure you have the following installed:
 ## 📁 Project Structure
 
 ```
-project-root/
-├── backend/              # Laravel API
+project-root/              # React App (Frontend)
+├── src/
+│   ├── components/
+│   ├── pages/
+│   ├── config/
+│   └── ...
+├── public/
+├── backend/              # Laravel API (Inside React project)
 │   ├── app/
 │   ├── config/
 │   ├── database/
 │   ├── routes/
+│   ├── .env
 │   └── ...
-└── frontend/             # React App
-    ├── src/
-    ├── public/
-    └── ...
+├── package.json
+├── vite.config.js
+├── .env
+└── ...
 ```
 
 ---
@@ -53,6 +60,7 @@ project-root/
 
 ```bash
 git clone <your-repository-url>
+cd project-root
 cd backend
 ```
 
@@ -196,10 +204,11 @@ php artisan queue:work
 
 ## ⚛️ Frontend Setup (React)
 
-### Step 1: Navigate to Frontend Directory
+### Step 1: Navigate to Project Root Directory
 
 ```bash
-cd ../frontend
+cd ..  # Go back to project root (if you're in backend folder)
+# You should now be in the React project root where package.json is located
 ```
 
 ### Step 2: Install Node Dependencies
@@ -218,10 +227,10 @@ yarn install
 
 ### Step 3: Environment Configuration
 
-Create `.env` file in the frontend directory:
+Create `.env` file in the **project root directory** (same level as package.json):
 
 ```bash
-cp .env.example .env
+touch .env
 ```
 
 Edit `.env` file:
@@ -268,6 +277,7 @@ You need to run **3 separate terminal windows**:
 ### Terminal 1: Laravel Server
 
 ```bash
+# From project root
 cd backend
 php artisan serve
 ```
@@ -275,6 +285,7 @@ php artisan serve
 ### Terminal 2: Reverb WebSocket Server
 
 ```bash
+# From project root
 cd backend
 php artisan reverb:start
 ```
@@ -282,13 +293,14 @@ php artisan reverb:start
 ### Terminal 3: React Development Server
 
 ```bash
-cd frontend
+# From project root (where package.json is)
 npm run dev
 ```
 
 ### Optional Terminal 4: Queue Worker
 
 ```bash
+# From project root
 cd backend
 php artisan queue:work
 ```
@@ -367,6 +379,8 @@ VITE_REVERB_HOST=localhost
 VITE_REVERB_PORT=8080
 VITE_REVERB_SCHEME=http
 ```
+
+**Note**: The React `.env` file should be in the **project root** directory (same level as `package.json`), while the Laravel `.env` file is inside the `backend/` folder.
 
 ---
 
