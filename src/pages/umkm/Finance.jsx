@@ -1,5 +1,6 @@
 // src/pages/umkm/Finance.jsx
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import TransactionForm from '../../pages/umkm/TransactionForm';
 import {
   TrendingUp,
@@ -30,12 +31,36 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
+// Configure axios base URL and interceptors
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Add token to all requests
+api.interceptors.request.use(
+  (config) => {
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default function UMKMFinance() {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [error, setError] = useState(null);
 
   // State untuk data keuangan
   const [stats, setStats] = useState([]);
@@ -44,144 +69,164 @@ export default function UMKMFinance() {
   const [cashFlowData, setCashFlowData] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
 
-  // Fetch data keuangan
+  // Fetch transactions from backend
+  const fetchTransactions = async () => {
+    try {
+      const response = await api.get('/umkm/transactions');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      throw error;
+    }
+  };
+
+  // Calculate statistics from transactions
+  const calculateStats = (transactions) => {
+    const totalRevenue = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    const totalExpenses = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    
+    const netProfit = totalRevenue - totalExpenses;
+    const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+    return {
+      totalRevenue: { value: totalRevenue, change: 0, isPositive: true },
+      totalExpenses: { value: totalExpenses, change: 0, isPositive: false },
+      netProfit: { value: netProfit, change: 0, isPositive: netProfit >= 0 },
+      profitMargin: { value: profitMargin, change: 0, isPositive: profitMargin >= 0 }
+    };
+  };
+
+  // Calculate revenue and expenses by month
+  const calculateRevenueExpenses = (transactions) => {
+    const monthlyData = {};
+    
+    transactions.forEach(t => {
+      const date = new Date(t.date);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { month: monthKey, revenue: 0, expenses: 0 };
+      }
+      
+      if (t.type === 'income') {
+        monthlyData[monthKey].revenue += parseFloat(t.amount);
+      } else {
+        monthlyData[monthKey].expenses += parseFloat(t.amount);
+      }
+    });
+    
+    return Object.values(monthlyData);
+  };
+
+  // Calculate expense breakdown by category
+  const calculateExpenseBreakdown = (transactions) => {
+    const categoryData = {};
+    
+    transactions
+      .filter(t => t.type === 'expense')
+      .forEach(t => {
+        const category = t.category || 'Lainnya';
+        categoryData[category] = (categoryData[category] || 0) + parseFloat(t.amount);
+      });
+    
+    return Object.entries(categoryData).map(([name, value]) => ({ name, value }));
+  };
+
+  // Calculate cash flow
+  const calculateCashFlow = (transactions) => {
+    const sortedTransactions = [...transactions].sort((a, b) => 
+      new Date(a.date) - new Date(b.date)
+    );
+    
+    let runningBalance = 0;
+    return sortedTransactions.map(t => {
+      if (t.type === 'income') {
+        runningBalance += parseFloat(t.amount);
+      } else {
+        runningBalance -= parseFloat(t.amount);
+      }
+      
+      const date = new Date(t.date);
+      return {
+        date: date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+        amount: runningBalance
+      };
+    });
+  };
+
+  // Fetch and process all financial data
   useEffect(() => {
     const fetchFinanceData = async () => {
       try {
         setIsLoading(true);
+        setError(null);
 
-        // TODO: Replace dengan API call ke backend
-        const result = {
-          stats: {
-            totalRevenue: { value: 125000000, change: 12.5, isPositive: true },
-            totalExpenses: { value: 78500000, change: 8.2, isPositive: false },
-            netProfit: { value: 46500000, change: 18.7, isPositive: true },
-            profitMargin: { value: 37.2, change: 2.1, isPositive: true }
-          },
-          revenueExpenses: [
-            { month: 'Jan', revenue: 85000000, expenses: 65000000 },
-            { month: 'Feb', revenue: 92000000, expenses: 68000000 },
-            { month: 'Mar', revenue: 88000000, expenses: 70000000 },
-            { month: 'Apr', revenue: 98000000, expenses: 72000000 },
-            { month: 'May', revenue: 105000000, expenses: 75000000 },
-            { month: 'Jun', revenue: 112000000, expenses: 78000000 },
-            { month: 'Jul', revenue: 125000000, expenses: 78500000 }
-          ],
-          expenseBreakdown: [
-            { name: 'Bahan Baku', value: 35000000 },
-            { name: 'Gaji Karyawan', value: 25000000 },
-            { name: 'Operasional', value: 12000000 },
-            { name: 'Marketing', value: 4500000 },
-            { name: 'Lainnya', value: 2000000 }
-          ],
-          cashFlow: [
-            { date: '1 Jul', amount: 15000000 },
-            { date: '5 Jul', amount: 22000000 },
-            { date: '10 Jul', amount: 18000000 },
-            { date: '15 Jul', amount: 28000000 },
-            { date: '20 Jul', amount: 32000000 },
-            { date: '25 Jul', amount: 38000000 },
-            { date: '30 Jul', amount: 46500000 }
-          ],
-          transactions: [
-            {
-              id: 'TRX-001',
-              type: 'income',
-              description: 'Penjualan Produk - Batch #45',
-              amount: 5500000,
-              date: '2024-07-30',
-              category: 'Revenue',
-              notes: ''
-            },
-            {
-              id: 'TRX-002',
-              type: 'expense',
-              description: 'Pembelian Bahan Baku',
-              amount: 3200000,
-              date: '2024-07-29',
-              category: 'Bahan Baku',
-              notes: ''
-            },
-            {
-              id: 'TRX-003',
-              type: 'income',
-              description: 'Investasi dari John Doe',
-              amount: 10000000,
-              date: '2024-07-28',
-              category: 'Investment',
-              notes: ''
-            },
-            {
-              id: 'TRX-004',
-              type: 'expense',
-              description: 'Gaji Karyawan Bulan Juli',
-              amount: 8500000,
-              date: '2024-07-27',
-              category: 'Gaji',
-              notes: ''
-            },
-            {
-              id: 'TRX-005',
-              type: 'income',
-              description: 'Penjualan Produk - Batch #44',
-              amount: 4800000,
-              date: '2024-07-26',
-              category: 'Revenue',
-              notes: ''
-            }
-          ]
-        };
+        const transactions = await fetchTransactions();
 
+        // Calculate statistics
+        const calculatedStats = calculateStats(transactions);
         const statsArray = [
           {
             title: 'Total Revenue',
-            value: formatCurrency(result.stats.totalRevenue.value),
-            change: `+${result.stats.totalRevenue.change}%`,
-            isPositive: result.stats.totalRevenue.isPositive,
+            value: formatCurrency(calculatedStats.totalRevenue.value),
+            change: `+${calculatedStats.totalRevenue.change}%`,
+            isPositive: calculatedStats.totalRevenue.isPositive,
             icon: <DollarSign size={24} />,
             color: 'green'
           },
           {
             title: 'Total Expenses',
-            value: formatCurrency(result.stats.totalExpenses.value),
-            change: `+${result.stats.totalExpenses.change}%`,
-            isPositive: result.stats.totalExpenses.isPositive,
+            value: formatCurrency(calculatedStats.totalExpenses.value),
+            change: `+${calculatedStats.totalExpenses.change}%`,
+            isPositive: calculatedStats.totalExpenses.isPositive,
             icon: <TrendingDown size={24} />,
             color: 'red'
           },
           {
             title: 'Net Profit',
-            value: formatCurrency(result.stats.netProfit.value),
-            change: `+${result.stats.netProfit.change}%`,
-            isPositive: result.stats.netProfit.isPositive,
+            value: formatCurrency(calculatedStats.netProfit.value),
+            change: `+${calculatedStats.netProfit.change}%`,
+            isPositive: calculatedStats.netProfit.isPositive,
             icon: <TrendingUp size={24} />,
             color: 'blue'
           },
           {
             title: 'Profit Margin',
-            value: `${result.stats.profitMargin.value}%`,
-            change: `+${result.stats.profitMargin.change}%`,
-            isPositive: result.stats.profitMargin.isPositive,
+            value: `${calculatedStats.profitMargin.value.toFixed(1)}%`,
+            change: `+${calculatedStats.profitMargin.change}%`,
+            isPositive: calculatedStats.profitMargin.isPositive,
             icon: <PieChartIcon size={24} />,
             color: 'purple'
           }
         ];
 
         setStats(statsArray);
-        setRevenueExpensesData(result.revenueExpenses);
+        setRevenueExpensesData(calculateRevenueExpenses(transactions));
         
+        // Add colors to expense breakdown
         const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#6B7280'];
-        const expenseWithColors = result.expenseBreakdown.map((item, index) => ({
+        const expenseWithColors = calculateExpenseBreakdown(transactions).map((item, index) => ({
           ...item,
           color: colors[index % colors.length]
         }));
         setExpenseBreakdown(expenseWithColors);
         
-        setCashFlowData(result.cashFlow);
-        setRecentTransactions(result.transactions);
+        setCashFlowData(calculateCashFlow(transactions));
+        
+        // Get 5 most recent transactions
+        const sortedTransactions = [...transactions].sort((a, b) => 
+          new Date(b.date) - new Date(a.date)
+        ).slice(0, 5);
+        setRecentTransactions(sortedTransactions);
 
       } catch (error) {
         console.error('Error fetching finance data:', error);
+        setError('Gagal memuat data keuangan. Silakan coba lagi.');
       } finally {
         setIsLoading(false);
       }
@@ -190,224 +235,316 @@ export default function UMKMFinance() {
     fetchFinanceData();
   }, [selectedPeriod]);
 
-  // ========================================
-  // BACKEND INTEGRATION: Create Transaction
-  // ========================================
+  // Create Transaction
   const handleCreateTransaction = async (formData) => {
-    setIsLoading(true);
     try {
-      // TODO: Replace dengan API call
-      // const response = await fetch('/api/umkm/transactions', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify(formData)
-      // });
-      // 
-      // if (response.ok) {
-      //   alert('✅ Transaksi berhasil ditambahkan!');
-      //   setShowAddModal(false);
-      //   // Refresh data
-      //   fetchFinanceData();
-      // }
+      setIsLoading(true);
+      setError(null);
 
-      // Simulasi
-      setTimeout(() => {
-        const newTransaction = {
-          id: `TRX-${String(recentTransactions.length + 1).padStart(3, '0')}`,
-          ...formData
-        };
-        setRecentTransactions([newTransaction, ...recentTransactions]);
-        alert('✅ Transaksi berhasil ditambahkan!');
+      const response = await api.post('/umkm/transactions', formData);
+      
+      if (response.data) {
+        // Refresh transactions list
+        const transactions = await fetchTransactions();
+        const sortedTransactions = [...transactions].sort((a, b) => 
+          new Date(b.date) - new Date(a.date)
+        ).slice(0, 5);
+        setRecentTransactions(sortedTransactions);
+
+        // Recalculate all stats
+        const calculatedStats = calculateStats(transactions);
+        const statsArray = [
+          {
+            title: 'Total Revenue',
+            value: formatCurrency(calculatedStats.totalRevenue.value),
+            change: `+${calculatedStats.totalRevenue.change}%`,
+            isPositive: calculatedStats.totalRevenue.isPositive,
+            icon: <DollarSign size={24} />,
+            color: 'green'
+          },
+          {
+            title: 'Total Expenses',
+            value: formatCurrency(calculatedStats.totalExpenses.value),
+            change: `+${calculatedStats.totalExpenses.change}%`,
+            isPositive: calculatedStats.totalExpenses.isPositive,
+            icon: <TrendingDown size={24} />,
+            color: 'red'
+          },
+          {
+            title: 'Net Profit',
+            value: formatCurrency(calculatedStats.netProfit.value),
+            change: `+${calculatedStats.netProfit.change}%`,
+            isPositive: calculatedStats.netProfit.isPositive,
+            icon: <TrendingUp size={24} />,
+            color: 'blue'
+          },
+          {
+            title: 'Profit Margin',
+            value: `${calculatedStats.profitMargin.value.toFixed(1)}%`,
+            change: `+${calculatedStats.profitMargin.change}%`,
+            isPositive: calculatedStats.profitMargin.isPositive,
+            icon: <PieChartIcon size={24} />,
+            color: 'purple'
+          }
+        ];
+        setStats(statsArray);
+        setRevenueExpensesData(calculateRevenueExpenses(transactions));
+        
+        const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#6B7280'];
+        const expenseWithColors = calculateExpenseBreakdown(transactions).map((item, index) => ({
+          ...item,
+          color: colors[index % colors.length]
+        }));
+        setExpenseBreakdown(expenseWithColors);
+        setCashFlowData(calculateCashFlow(transactions));
+
         setShowAddModal(false);
-      }, 1000);
+        alert('Transaksi berhasil ditambahkan!');
+      }
     } catch (error) {
       console.error('Error creating transaction:', error);
-      alert('❌ Gagal menambahkan transaksi');
+      setError(error.response?.data?.message || 'Gagal menambahkan transaksi');
+      alert('Gagal menambahkan transaksi. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ========================================
-  // BACKEND INTEGRATION: Update Transaction
-  // ========================================
+  // Update Transaction
   const handleUpdateTransaction = async (formData) => {
-    setIsLoading(true);
     try {
-      // TODO: Replace dengan API call
-      // const response = await fetch(`/api/umkm/transactions/${selectedTransaction.id}`, {
-      //   method: 'PUT',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify(formData)
-      // });
-      // 
-      // if (response.ok) {
-      //   alert('✅ Transaksi berhasil diupdate!');
-      //   setShowEditModal(false);
-      //   setSelectedTransaction(null);
-      //   fetchFinanceData();
-      // }
+      setIsLoading(true);
+      setError(null);
 
-      // Simulasi
-      setTimeout(() => {
-        setRecentTransactions(recentTransactions.map(trx => 
-          trx.id === selectedTransaction.id ? { ...trx, ...formData } : trx
-        ));
-        alert('✅ Transaksi berhasil diupdate!');
+      const response = await api.put(`/umkm/transactions/${selectedTransaction.trx_id || selectedTransaction.id}`, formData);
+      
+      if (response.data) {
+        // Refresh transactions list
+        const transactions = await fetchTransactions();
+        const sortedTransactions = [...transactions].sort((a, b) => 
+          new Date(b.date) - new Date(a.date)
+        ).slice(0, 5);
+        setRecentTransactions(sortedTransactions);
+
+        // Recalculate all stats
+        const calculatedStats = calculateStats(transactions);
+        const statsArray = [
+          {
+            title: 'Total Revenue',
+            value: formatCurrency(calculatedStats.totalRevenue.value),
+            change: `+${calculatedStats.totalRevenue.change}%`,
+            isPositive: calculatedStats.totalRevenue.isPositive,
+            icon: <DollarSign size={24} />,
+            color: 'green'
+          },
+          {
+            title: 'Total Expenses',
+            value: formatCurrency(calculatedStats.totalExpenses.value),
+            change: `+${calculatedStats.totalExpenses.change}%`,
+            isPositive: calculatedStats.totalExpenses.isPositive,
+            icon: <TrendingDown size={24} />,
+            color: 'red'
+          },
+          {
+            title: 'Net Profit',
+            value: formatCurrency(calculatedStats.netProfit.value),
+            change: `+${calculatedStats.netProfit.change}%`,
+            isPositive: calculatedStats.netProfit.isPositive,
+            icon: <TrendingUp size={24} />,
+            color: 'blue'
+          },
+          {
+            title: 'Profit Margin',
+            value: `${calculatedStats.profitMargin.value.toFixed(1)}%`,
+            change: `+${calculatedStats.profitMargin.change}%`,
+            isPositive: calculatedStats.profitMargin.isPositive,
+            icon: <PieChartIcon size={24} />,
+            color: 'purple'
+          }
+        ];
+        setStats(statsArray);
+        setRevenueExpensesData(calculateRevenueExpenses(transactions));
+        
+        const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#6B7280'];
+        const expenseWithColors = calculateExpenseBreakdown(transactions).map((item, index) => ({
+          ...item,
+          color: colors[index % colors.length]
+        }));
+        setExpenseBreakdown(expenseWithColors);
+        setCashFlowData(calculateCashFlow(transactions));
+
         setShowEditModal(false);
         setSelectedTransaction(null);
-      }, 1000);
+        alert('Transaksi berhasil diupdate!');
+      }
     } catch (error) {
       console.error('Error updating transaction:', error);
-      alert('❌ Gagal mengupdate transaksi');
+      setError(error.response?.data?.message || 'Gagal mengupdate transaksi');
+      alert('Gagal mengupdate transaksi. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ========================================
-  // BACKEND INTEGRATION: Delete Transaction
-  // ========================================
+  // Delete Transaction
   const handleDeleteTransaction = async (transactionId) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
-    
-    try {
-      // TODO: Replace dengan API call
-      // const response = await fetch(`/api/umkm/transactions/${transactionId}`, {
-      //   method: 'DELETE',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
-      // 
-      // if (response.ok) {
-      //   alert('✅ Transaksi berhasil dihapus!');
-      //   fetchFinanceData();
-      // }
+    if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+      return;
+    }
 
-      // Simulasi
-      setRecentTransactions(recentTransactions.filter(trx => trx.id !== transactionId));
-      alert('✅ Transaksi berhasil dihapus!');
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      await api.delete(`/umkm/transactions/${transactionId}`);
+      
+      // Refresh transactions list
+      const transactions = await fetchTransactions();
+      const sortedTransactions = [...transactions].sort((a, b) => 
+        new Date(b.date) - new Date(a.date)
+      ).slice(0, 5);
+      setRecentTransactions(sortedTransactions);
+
+      // Recalculate all stats
+      const calculatedStats = calculateStats(transactions);
+      const statsArray = [
+        {
+          title: 'Total Revenue',
+          value: formatCurrency(calculatedStats.totalRevenue.value),
+          change: `+${calculatedStats.totalRevenue.change}%`,
+          isPositive: calculatedStats.totalRevenue.isPositive,
+          icon: <DollarSign size={24} />,
+          color: 'green'
+        },
+        {
+          title: 'Total Expenses',
+          value: formatCurrency(calculatedStats.totalExpenses.value),
+          change: `+${calculatedStats.totalExpenses.change}%`,
+          isPositive: calculatedStats.totalExpenses.isPositive,
+          icon: <TrendingDown size={24} />,
+          color: 'red'
+        },
+        {
+          title: 'Net Profit',
+          value: formatCurrency(calculatedStats.netProfit.value),
+          change: `+${calculatedStats.netProfit.change}%`,
+          isPositive: calculatedStats.netProfit.isPositive,
+          icon: <TrendingUp size={24} />,
+          color: 'blue'
+        },
+        {
+          title: 'Profit Margin',
+          value: `${calculatedStats.profitMargin.value.toFixed(1)}%`,
+          change: `+${calculatedStats.profitMargin.change}%`,
+          isPositive: calculatedStats.profitMargin.isPositive,
+          icon: <PieChartIcon size={24} />,
+          color: 'purple'
+        }
+      ];
+      setStats(statsArray);
+      setRevenueExpensesData(calculateRevenueExpenses(transactions));
+      
+      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#6B7280'];
+      const expenseWithColors = calculateExpenseBreakdown(transactions).map((item, index) => ({
+        ...item,
+        color: colors[index % colors.length]
+      }));
+      setExpenseBreakdown(expenseWithColors);
+      setCashFlowData(calculateCashFlow(transactions));
+
+      alert('Transaksi berhasil dihapus!');
     } catch (error) {
       console.error('Error deleting transaction:', error);
-      alert('❌ Gagal menghapus transaksi');
+      setError(error.response?.data?.message || 'Gagal menghapus transaksi');
+      alert('Gagal menghapus transaksi. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleExportReport = async () => {
-    try {
-      // TODO: API call untuk export
-      alert('Export report feature - integrate with backend');
-    } catch (error) {
-      console.error('Error exporting report:', error);
-    }
-  };
-
-  const formatCurrency = (value) => {
+  // Helper Functions
+  const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0
-    }).format(value);
+    }).format(amount);
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', { 
+    return date.toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
     });
   };
 
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-200">
-          <p className="font-semibold text-gray-900 mb-2">{label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatCurrency(entry.value)}
-            </p>
-          ))}
+        <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+          <p className="text-sm font-semibold text-gray-900">{payload[0].payload.date}</p>
+          <p className="text-sm text-gray-600">
+            <span className="font-medium">Amount:</span> {formatCurrency(payload[0].value)}
+          </p>
         </div>
       );
     }
     return null;
   };
 
-  const getColorClasses = (color) => {
-    const colors = {
-      green: 'bg-green-50 text-green-600',
-      red: 'bg-red-50 text-red-600',
-      blue: 'bg-blue-50 text-blue-600',
-      purple: 'bg-purple-50 text-purple-600'
-    };
-    return colors[color] || colors.blue;
-  };
-
-  // Loading state
-  if (isLoading && !showAddModal && !showEditModal) {
+  if (isLoading && recentTransactions.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat data keuangan...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Memuat data keuangan...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Keuangan</h1>
-          <p className="text-gray-600 mt-1">Monitor kesehatan finansial bisnis Anda secara real-time</p>
+          <h1 className="text-3xl font-bold text-gray-900">Financial Dashboard</h1>
+          <p className="text-gray-600 mt-1">Monitor dan kelola keuangan bisnis Anda</p>
         </div>
-        
         <div className="flex items-center space-x-3">
-          {/* Period Selector */}
-          <div className="flex items-center space-x-2 bg-white rounded-xl border-2 border-gray-200 p-1">
-            {['month', 'quarter', 'year'].map((period) => (
-              <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
-                  selectedPeriod === period
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {period === 'month' ? 'Bulan Ini' : period === 'quarter' ? 'Kuartal' : 'Tahun'}
-              </button>
-            ))}
-          </div>
-          
-          <button 
-            onClick={handleExportReport}
-            className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-lg transition"
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-xl font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
+            <option value="week">Minggu Ini</option>
+            <option value="month">Bulan Ini</option>
+            <option value="quarter">Kuartal Ini</option>
+            <option value="year">Tahun Ini</option>
+          </select>
+          <button className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition">
             <Download size={20} />
             <span>Export</span>
           </button>
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition">
-            <div className="flex items-start justify-between mb-4">
-              <div className={`p-3 rounded-xl ${getColorClasses(stat.color)}`}>
-                {stat.icon}
+          <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-3 rounded-xl bg-${stat.color}-50`}>
+                <div className={`text-${stat.color}-600`}>{stat.icon}</div>
               </div>
               <div className={`flex items-center space-x-1 text-sm font-semibold ${
                 stat.isPositive ? 'text-green-600' : 'text-red-600'
@@ -416,61 +553,71 @@ export default function UMKMFinance() {
                 <span>{stat.change}</span>
               </div>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">{stat.title}</h3>
+            <p className="text-gray-600 text-sm font-medium mb-1">{stat.title}</p>
             <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Charts Row */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Revenue vs Expenses Line Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Revenue vs Expenses</h2>
-              <p className="text-sm text-gray-600 mt-1">Perbandingan pendapatan dan pengeluaran</p>
+      {/* Revenue vs Expenses Chart */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Revenue vs Expenses</h2>
+            <p className="text-sm text-gray-600 mt-1">Perbandingan pendapatan dan pengeluaran</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700">Revenue</span>
             </div>
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                <span className="text-gray-600">Revenue</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-gray-600">Expenses</span>
-              </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700">Expenses</span>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueExpensesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" tickFormatter={(value) => `${value / 1000000}M`} />
-              <Tooltip content={<CustomTooltip />} />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#3B82F6"
-                strokeWidth={3}
-                dot={{ fill: '#3B82F6', r: 5 }}
-                activeDot={{ r: 7 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="expenses"
-                stroke="#EF4444"
-                strokeWidth={3}
-                dot={{ fill: '#EF4444', r: 5 }}
-                activeDot={{ r: 7 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
         </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={revenueExpensesData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="month" stroke="#9CA3AF" />
+            <YAxis stroke="#9CA3AF" tickFormatter={(value) => `${value / 1000000}M`} />
+            <Tooltip 
+              formatter={(value) => formatCurrency(value)}
+              contentStyle={{ 
+                backgroundColor: 'white', 
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem'
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              stroke="#3B82F6"
+              strokeWidth={3}
+              dot={{ fill: '#3B82F6', r: 5 }}
+              activeDot={{ r: 7 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="expenses"
+              stroke="#EF4444"
+              strokeWidth={3}
+              dot={{ fill: '#EF4444', r: 5 }}
+              activeDot={{ r: 7 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
-        {/* Expense Breakdown Pie Chart */}
+      {/* Expense Breakdown & Cash Flow */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Expense Breakdown */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Breakdown Pengeluaran</h2>
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Expense Breakdown</h2>
+            <p className="text-sm text-gray-600 mt-1">Distribusi pengeluaran berdasarkan kategori</p>
+          </div>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -479,7 +626,7 @@ export default function UMKMFinance() {
                 cy="50%"
                 innerRadius={60}
                 outerRadius={90}
-                paddingAngle={2}
+                paddingAngle={5}
                 dataKey="value"
               >
                 {expenseBreakdown.map((entry, index) => (
@@ -501,44 +648,44 @@ export default function UMKMFinance() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Cash Flow Chart */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Cash Flow</h2>
-            <p className="text-sm text-gray-600 mt-1">Aliran kas bersih periode ini</p>
+        {/* Cash Flow Chart */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Cash Flow</h2>
+              <p className="text-sm text-gray-600 mt-1">Aliran kas bersih periode ini</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-600">Saldo Akhir</p>
+              <p className="text-2xl font-bold text-green-600">
+                {cashFlowData.length > 0 ? formatCurrency(cashFlowData[cashFlowData.length - 1].amount) : 'Rp 0'}
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Saldo Akhir</p>
-            <p className="text-2xl font-bold text-green-600">
-              {cashFlowData.length > 0 ? formatCurrency(cashFlowData[cashFlowData.length - 1].amount) : 'Rp 0'}
-            </p>
-          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={cashFlowData}>
+              <defs>
+                <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="date" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" tickFormatter={(value) => `${value / 1000000}M`} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="amount"
+                stroke="#10B981"
+                strokeWidth={3}
+                fillOpacity={1}
+                fill="url(#colorAmount)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={cashFlowData}>
-            <defs>
-              <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="date" stroke="#9CA3AF" />
-            <YAxis stroke="#9CA3AF" tickFormatter={(value) => `${value / 1000000}M`} />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="amount"
-              stroke="#10B981"
-              strokeWidth={3}
-              fillOpacity={1}
-              fill="url(#colorAmount)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
       </div>
 
       {/* Recent Transactions */}
@@ -570,9 +717,9 @@ export default function UMKMFinance() {
             </thead>
             <tbody>
               {recentTransactions.map((trx) => (
-                <tr key={trx.id} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                <tr key={trx.trx_id || trx.id} className="border-b border-gray-100 hover:bg-gray-50 transition">
                   <td className="py-4 px-4">
-                    <span className="font-mono text-sm font-semibold text-gray-900">{trx.id}</span>
+                    <span className="font-mono text-sm font-semibold text-gray-900">{trx.trx_id || trx.id}</span>
                   </td>
                   <td className="py-4 px-4">
                     <p className="text-sm font-medium text-gray-900">{trx.description}</p>
@@ -581,7 +728,7 @@ export default function UMKMFinance() {
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                       trx.type === 'income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
-                      {trx.category}
+                      {trx.category || 'Lainnya'}
                     </span>
                   </td>
                   <td className="py-4 px-4">
@@ -609,7 +756,7 @@ export default function UMKMFinance() {
                         <Edit size={16} />
                       </button>
                       <button
-                        onClick={() => handleDeleteTransaction(trx.id)}
+                        onClick={() => handleDeleteTransaction(trx.trx_id || trx.id)}
                         className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
                       >
                         <Trash2 size={16} />
@@ -621,9 +768,11 @@ export default function UMKMFinance() {
             </tbody>
           </table>
         </div>
-        <button className="mt-4 text-blue-600 hover:text-blue-700 font-medium text-sm">
-          Lihat Semua Transaksi →
-        </button>
+        {recentTransactions.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            Belum ada transaksi. Klik "Tambah Transaksi" untuk memulai.
+          </div>
+        )}
       </div>
 
       {/* Add Transaction Modal */}

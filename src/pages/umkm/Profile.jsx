@@ -69,6 +69,9 @@ export default function UMKMProfile() {
   const [fotoPreview, setFotoPreview] = useState([]);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [logoBe, setlogoBe] = useState(null);
+  const [fotoForm, setfotoForm] = useState([]);
+  const [fotoBe, setfotoBe] = useState([]);
 
   // ========================================
   // 🔴 BACKEND INTEGRATION POINT #2: FETCH DATA ON MOUNT
@@ -86,7 +89,7 @@ export default function UMKMProfile() {
         }
 
         // 🔹 Fetch data dari API berdasarkan user id atau UMKM id
-        const response = await axios.get(`http://127.0.0.1:8000/api/umkm/${id}`, {
+        const response = await axios.get(`http://127.0.0.1:8000/api/umkm/show`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -117,15 +120,14 @@ export default function UMKMProfile() {
           videoPitchUrl: data.videoPitchUrl || '',
           minInvestasi: data.minInvestasi || '',
           targetInvestasi: data.targetInvestasi || '',
-          logo: "http://127.0.0.1:8000/storage/" + data.logo || null,
-          fotoProduk: [
-            'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
-            'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=300&fit=crop']
+          fotoProduk: [] || []
+
         });
 
         // 🔹 Set preview gambar
-        setLogoPreview(formData.logo || '');
-        setFotoPreview(formData.fotoProduk || []);
+        setlogoBe(data.logo || null);
+        setfotoBe(data.foto_produk || []);
+        
 
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -184,7 +186,7 @@ export default function UMKMProfile() {
       if (id) formDataToSend.append('id', id); // opsional, kalau update
 
       const response = await axios.post(
-        'http://127.0.0.1:8000/api/umkm', // endpoint create/update UMKM
+        'http://127.0.0.1:8000/api/umkm/show', // endpoint create/update UMKM
         formDataToSend,
         {
           headers: {
@@ -208,57 +210,86 @@ export default function UMKMProfile() {
   };
 
 
-const handleFotoUpload = async (e) => {
-  const files = Array.from(e.target.files);
+  const handleFotoUpload = async (e) => {
+    const files = Array.from(e.target.files);
 
-  if (fotoPreview.length + files.length > 5) {
-    alert('Maksimal 5 foto produk');
-    return;
-  }
-
-  for (const file of files) {
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Ukuran file maksimal 2MB per foto');
-      continue; // skip file yang terlalu besar
+    if (fotoPreview.length + files.length > 5) {
+      alert('Maksimal 5 foto produk');
+      return;
     }
 
-    // --- Preview ---
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFotoPreview(prev => [...prev, reader.result]);
-    };
-    reader.readAsDataURL(file);
+    for (const file of files) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran file maksimal 2MB per foto');
+        continue; // skip file yang terlalu besar
+      }
 
-    // --- Upload ke backend ---
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('fotoProduk[]', file);
-      if (id) formDataToSend.append('id', id); // opsional, untuk update UMKM
+      // --- Preview ---
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoPreview(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
 
-      const response = await axios.post(
-        'http://127.0.0.1:8000/api/umkm', // endpoint create/update UMKM
-        formDataToSend,
-        {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      setfotoForm(prev => [...prev, file]);
 
-      console.log('Foto uploaded successfully:', response.data);
-      // Jika backend mengembalikan array path foto, update formData
-      setFormData(prev => ({
-        ...prev,
-        fotoProduk: [...prev.fotoProduk, response.data.data.fotoProduk?.[0] || file]
-      }));
+      // --- Upload ke backend ---
 
-    } catch (error) {
-      console.error('Error uploading foto:', error);
-      alert('Gagal mengunggah foto: ' + file.name);
     }
+  };
+
+useEffect(() => {
+  uploadFotoToBackend()
+}, [fotoForm]);
+async function uploadFotoToBackend() {
+  try {
+    const formDataToSend = new FormData();
+
+    // ✅ Pastikan fotoForm berisi array of File
+    if (Array.isArray(fotoForm)) {
+      fotoForm.forEach((file) => {
+        formDataToSend.append('fotoProduk[]', file); // kirim sebagai file binary
+      });
+    } else if (fotoForm instanceof File) {
+      formDataToSend.append('fotoProduk[]', fotoForm);
+    } else {
+      console.error('fotoForm is not a File or array of File:', fotoForm);
+      alert('Data foto tidak valid. Pastikan Anda memilih file dari input.');
+      return;
+    }
+
+    // Tambahkan id jika perlu
+    if (id) formDataToSend.append('id', id);
+
+    const response = await axios.post(
+      'http://127.0.0.1:8000/api/umkm',
+      formDataToSend,
+      {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    console.log('Foto uploaded successfully:', response.data);
+
+    // ✅ Update formData dengan path foto yang dikembalikan backend
+    setFormData((prev) => ({
+      ...prev,
+      fotoProduk: [
+        ...(prev.fotoProduk || []),
+        ...(response.data.data.fotoProduk
+          ? JSON.parse(response.data.data.fotoProduk)
+          : []),
+      ],
+    }));
+  } catch (error) {
+    console.error('Error uploading foto:', error);
+    alert('Gagal mengunggah foto.');
   }
-};
+}
+
 
 
   const removeFoto = (index) => {
@@ -412,8 +443,8 @@ const handleFotoUpload = async (e) => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-4 py-3 rounded-xl font-semibold transition ${activeTab === tab.id
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-gray-600 hover:bg-gray-50'
                   }`}
               >
                 {tab.icon}
@@ -478,8 +509,8 @@ const handleFotoUpload = async (e) => {
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, bidangUsaha: bidang.id }))}
                       className={`p-4 border-2 rounded-xl transition-all ${formData.bidangUsaha === bidang.id
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-blue-300'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
                         }`}
                     >
                       <div className="text-3xl mb-2">{bidang.icon}</div>
@@ -627,6 +658,14 @@ const handleFotoUpload = async (e) => {
                 </label>
                 <div className="flex items-start space-x-6">
                   <div className="flex-shrink-0">
+                    {logoBe && (
+                      <img
+                        src={`http://127.0.0.1:8000/storage/${logoBe}`}
+                        alt="Logo Preview"
+                        className="w-32 h-32 object-cover rounded-2xl border-2 border-gray-200"
+                      />
+                    )}
+                    <div>Logo baru</div>
                     {logoPreview && (
                       <img
                         src={logoPreview}
@@ -661,6 +700,35 @@ const handleFotoUpload = async (e) => {
                   Foto Produk / Usaha (Maksimal 5 foto)
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  {fotoBe.map((foto, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={`http://127.0.0.1:8000/storage/${foto.path}`}
+                        alt={`Foto ${index + 1}`}
+                        className="w-full h-48 object-cover rounded-xl border-2 border-gray-200"  
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFoto(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+               ]
+
+                  
+
+
+                </div>
+              </div>
+                 <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Foto Produk / Usaha (Maksimal 5 foto) foto baru akan mengganti foto lama
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+  
                   {fotoPreview.map((foto, index) => (
                     <div key={index} className="relative group">
                       <img
@@ -677,6 +745,9 @@ const handleFotoUpload = async (e) => {
                       </button>
                     </div>
                   ))}
+
+                  
+
                   {fotoPreview.length < 5 && (
                     <div
                       onClick={() => document.getElementById('fotoUpload').click()}

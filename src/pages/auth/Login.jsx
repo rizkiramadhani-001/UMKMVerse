@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import axios from 'axios';
@@ -12,6 +12,13 @@ export default function Login() {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Jika sudah login, langsung redirect ke halaman sebelumnya atau dashboard
+    if (sessionStorage.getItem('token')) {
+      navigate(sessionStorage.getItem('redirect_url') || '/dashboard');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

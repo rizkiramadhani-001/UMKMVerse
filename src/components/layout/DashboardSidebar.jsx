@@ -52,7 +52,6 @@ export default function DashboardSidebar({ role }) {
     distributor: [
       { path: '/distributor-dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
       { path: '/distributor-dashboard/orders', icon: <ShoppingCart size={20} />, label: 'Pesanan' },
-      { path: '/distributor-dashboard/tracking', icon: <Truck size={20} />, label: 'Tracking' },
       { path: '/distributor-dashboard/contracts', icon: <FileText size={20} />, label: 'Kontrak' },
       { path: '/distributor-dashboard/chat', icon: <MessageSquare size={20} />, label: 'Chat' },
       { path: '/distributor-dashboard/settings', icon: <Settings size={20} />, label: 'Pengaturan' }

@@ -1,5 +1,6 @@
-// src/pages/public/BrowseUMKM.jsx
-import { useState } from 'react';
+/// src/pages/public/BrowseUMKM.jsx
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -7,7 +8,6 @@ import {
   Star,
   TrendingUp,
   Users,
-  Filter,
   X,
   ChevronRight,
   ChevronLeft,
@@ -16,234 +16,94 @@ import {
 
 export default function BrowseUMKM() {
   const navigate = useNavigate();
-  
+
+  // State utama
+  const [allUMKM, setAllUMKM] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState('popular'); // popular, newest, roi, investment
+  const [sortBy, setSortBy] = useState('popular');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
-  // Filter states
   const [filters, setFilters] = useState({
     minInvestment: '',
     maxInvestment: '',
     location: '',
     minRating: 0,
-    investmentProgress: 'all' // all, below50, above50
+    investmentProgress: 'all'
   });
 
   const categories = [
-    { id: 'all', name: 'Semua', icon: '🏢', count: 456 },
-    { id: 'fnb', name: 'Food & Beverage', icon: '🍔', count: 189 },
-    { id: 'agrikultur', name: 'Agrikultur', icon: '🌾', count: 142 },
-    { id: 'service', name: 'Service / Jasa', icon: '⚙️', count: 125 }
+    { id: 'all', name: 'Semua', icon: '🏢' },
+    { id: 'fnb', name: 'Food & Beverage', icon: '🍔' },
+    { id: 'agrikultur', name: 'Agrikultur', icon: '🌾' },
+    { id: 'service', name: 'Service / Jasa', icon: '⚙️' }
   ];
 
-  // Dummy UMKM data - nanti ganti dengan API
-  const allUMKM = [
-    {
-      id: 1,
-      name: 'Warung Kopi Nusantara',
-      category: 'fnb',
-      description: 'Kedai kopi dengan biji kopi pilihan dari berbagai daerah di Indonesia dengan cita rasa premium',
-      location: 'Jakarta Selatan',
-      rating: 4.8,
-      reviewCount: 124,
-      image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
-      invested: 60,
-      minInvest: 5000000,
-      targetInvest: 100000000,
-      roi: 18.5,
-      investorCount: 24,
-      verified: true
-    },
-    {
-      id: 2,
-      name: 'Tani Organik Sejahtera',
-      category: 'agrikultur',
-      description: 'Produsen sayuran organik berkualitas tinggi dengan metode pertanian modern dan berkelanjutan',
-      location: 'Bandung, Jawa Barat',
-      rating: 4.9,
-      reviewCount: 89,
-      image: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&h=300&fit=crop',
-      invested: 45,
-      minInvest: 10000000,
-      targetInvest: 200000000,
-      roi: 22.3,
-      investorCount: 18,
-      verified: true
-    },
-    {
-      id: 3,
-      name: 'Bakery Roti Hangat',
-      category: 'fnb',
-      description: 'Toko roti artisan dengan resep tradisional dan bahan berkualitas premium',
-      location: 'Surabaya, Jawa Timur',
-      rating: 4.7,
-      reviewCount: 156,
-      image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop',
-      invested: 75,
-      minInvest: 3000000,
-      targetInvest: 50000000,
-      roi: 15.2,
-      investorCount: 32,
-      verified: true
-    },
-    {
-      id: 4,
-      name: 'Laundry Express 24/7',
-      category: 'service',
-      description: 'Layanan laundry premium dengan pickup & delivery service 24 jam',
-      location: 'Jakarta Pusat',
-      rating: 4.6,
-      reviewCount: 203,
-      image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&h=300&fit=crop',
-      invested: 30,
-      minInvest: 8000000,
-      targetInvest: 150000000,
-      roi: 12.8,
-      investorCount: 15,
-      verified: true
-    },
-    {
-      id: 5,
-      name: 'Hidroponik Modern Farm',
-      category: 'agrikultur',
-      description: 'Pertanian hidroponik untuk sayuran segar tanpa pestisida dengan teknologi otomasi',
-      location: 'Bogor, Jawa Barat',
-      rating: 4.8,
-      reviewCount: 67,
-      image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=400&h=300&fit=crop',
-      invested: 55,
-      minInvest: 15000000,
-      targetInvest: 300000000,
-      roi: 20.5,
-      investorCount: 22,
-      verified: true
-    },
-    {
-      id: 6,
-      name: 'Service AC Pro',
-      category: 'service',
-      description: 'Jasa service dan instalasi AC untuk rumah dan kantor dengan garansi terpercaya',
-      location: 'Tangerang, Banten',
-      rating: 4.5,
-      reviewCount: 178,
-      image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400&h=300&fit=crop',
-      invested: 20,
-      minInvest: 5000000,
-      targetInvest: 80000000,
-      roi: 14.2,
-      investorCount: 12,
-      verified: false
-    },
-    {
-      id: 7,
-      name: 'Kedai Sate Madura',
-      category: 'fnb',
-      description: 'Sate khas Madura dengan bumbu rahasia turun temurun dan daging pilihan',
-      location: 'Malang, Jawa Timur',
-      rating: 4.9,
-      reviewCount: 245,
-      image: 'https://images.unsplash.com/photo-1529042410759-befb1204b468?w=400&h=300&fit=crop',
-      invested: 85,
-      minInvest: 2000000,
-      targetInvest: 30000000,
-      roi: 19.8,
-      investorCount: 45,
-      verified: true
-    },
-    {
-      id: 8,
-      name: 'Peternakan Ayam Modern',
-      category: 'agrikultur',
-      description: 'Peternakan ayam kampung organik dengan sistem kandang modern',
-      location: 'Yogyakarta',
-      rating: 4.6,
-      reviewCount: 92,
-      image: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&h=300&fit=crop',
-      invested: 40,
-      minInvest: 12000000,
-      targetInvest: 250000000,
-      roi: 17.5,
-      investorCount: 19,
-      verified: true
-    },
-    {
-      id: 9,
-      name: 'Salon & Spa Premium',
-      category: 'service',
-      description: 'Salon dan spa dengan peralatan modern dan terapis bersertifikat',
-      location: 'Jakarta Selatan',
-      rating: 4.7,
-      reviewCount: 134,
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=300&fit=crop',
-      invested: 65,
-      minInvest: 20000000,
-      targetInvest: 400000000,
-      roi: 16.3,
-      investorCount: 28,
-      verified: true
-    },
-    // Tambahkan lebih banyak data untuk pagination demo
-    {
-      id: 10,
-      name: 'Rumah Makan Padang Sederhana',
-      category: 'fnb',
-      description: 'Rumah makan Padang dengan cita rasa autentik dan harga terjangkau',
-      location: 'Padang, Sumatera Barat',
-      rating: 4.8,
-      reviewCount: 312,
-      image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop',
-      invested: 90,
-      minInvest: 1000000,
-      targetInvest: 20000000,
-      roi: 21.5,
-      investorCount: 58,
-      verified: true
-    }
-  ];
+  // === Fetch Data dari API ===
+  useEffect(() => {
+const fetchUMKM = async () => {
+  try {
+    setLoading(true);
+    const res = await axios.get('http://127.0.0.1:8000/api/umkm');
 
-  // Filter UMKM
-  const filteredUMKM = allUMKM.filter(umkm => {
-    // Category filter
+    // Pastikan response adalah array
+    const umkmArray = Array.isArray(res.data) ? res.data : res.data.data || [];
+
+    const formatted = umkmArray.map((item) => ({
+      id: item.id,
+      name: item.namaUmkm,
+      category: item.bidangUsaha || 'other',
+      description: item.deskripsiSingkat,
+      location: item.lokasiUsaha,
+      rating: 4.8,
+      reviewCount: 0,
+      image: item.foto_produk?.length
+        ? `http://127.0.0.1:8000/storage/${item.foto_produk[0].path}`
+        : `https://placehold.co/400x300?text=${encodeURIComponent(item.namaUmkm)}`,
+      invested: Math.floor(Math.random() * 100),
+      minInvest: item.minInvestasi || 0,
+      targetInvest: item.targetInvestasi || 0,
+      roi: 15 + Math.random().toFixed(1),
+      investorCount: Math.floor(Math.random() * 50),
+      verified: true
+    }));
+
+    setAllUMKM(formatted);
+  } catch (error) {
+    console.error('Error fetching UMKM:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+    fetchUMKM();
+  }, []);
+
+  // === Filter ===
+  const filteredUMKM = allUMKM.filter((umkm) => {
     if (selectedCategory !== 'all' && umkm.category !== selectedCategory) return false;
-
-    // Search query
-    if (searchQuery && !umkm.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !umkm.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+    if (
+      searchQuery &&
+      !umkm.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !umkm.description.toLowerCase().includes(searchQuery.toLowerCase())
+    )
       return false;
-    }
-
-    // Location filter
-    if (filters.location && !umkm.location.toLowerCase().includes(filters.location.toLowerCase())) {
+    if (filters.location && !umkm.location.toLowerCase().includes(filters.location.toLowerCase()))
       return false;
-    }
-
-    // Min Investment filter
-    if (filters.minInvestment && umkm.minInvest < parseInt(filters.minInvestment)) {
-      return false;
-    }
-
-    // Max Investment filter
-    if (filters.maxInvestment && umkm.minInvest > parseInt(filters.maxInvestment)) {
-      return false;
-    }
-
-    // Rating filter
-    if (filters.minRating && umkm.rating < filters.minRating) {
-      return false;
-    }
-
-    // Investment progress filter
+    if (filters.minInvestment && umkm.minInvest < parseInt(filters.minInvestment)) return false;
+    if (filters.maxInvestment && umkm.minInvest > parseInt(filters.maxInvestment)) return false;
+    if (filters.minRating && umkm.rating < filters.minRating) return false;
     if (filters.investmentProgress === 'below50' && umkm.invested >= 50) return false;
     if (filters.investmentProgress === 'above50' && umkm.invested < 50) return false;
-
     return true;
   });
 
-  // Sort UMKM
+  // === Sort ===
   const sortedUMKM = [...filteredUMKM].sort((a, b) => {
     switch (sortBy) {
       case 'newest':
@@ -258,19 +118,17 @@ export default function BrowseUMKM() {
     }
   });
 
-  // Pagination
+  // === Pagination ===
   const totalPages = Math.ceil(sortedUMKM.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedUMKM = sortedUMKM.slice(startIndex, startIndex + itemsPerPage);
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      minimumFractionDigits: 0
     }).format(value);
-  };
 
   const resetFilters = () => {
     setFilters({
@@ -284,9 +142,16 @@ export default function BrowseUMKM() {
     setSelectedCategory('all');
   };
 
-  const handleCardClick = (umkmId) => {
-    navigate(`/umkm/${umkmId}`);
-  };
+  const handleCardClick = (umkmId) => navigate(`/umkm/${umkmId}`);
+
+  // === Render ===
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-lg font-semibold text-gray-700">
+        ⏳ Memuat data UMKM...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -354,17 +219,15 @@ export default function BrowseUMKM() {
                   setSelectedCategory(cat.id);
                   setCurrentPage(1);
                 }}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2 ${
-                  selectedCategory === cat.id
+                className={`px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2 ${selectedCategory === cat.id
                     ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
                     : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300'
-                }`}
+                  }`}
               >
                 <span className="text-xl">{cat.icon}</span>
                 <span>{cat.name}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                  selectedCategory === cat.id ? 'bg-white/20' : 'bg-gray-100'
-                }`}>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedCategory === cat.id ? 'bg-white/20' : 'bg-gray-100'
+                  }`}>
                   {cat.count}
                 </span>
               </button>
@@ -593,11 +456,10 @@ export default function BrowseUMKM() {
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className={`p-2 rounded-lg border-2 transition ${
-                      currentPage === 1
+                    className={`p-2 rounded-lg border-2 transition ${currentPage === 1
                         ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                         : 'border-gray-300 text-gray-700 hover:border-blue-600 hover:text-blue-600'
-                    }`}
+                      }`}
                   >
                     <ChevronLeft size={20} />
                   </button>
@@ -606,11 +468,10 @@ export default function BrowseUMKM() {
                     <button
                       key={index}
                       onClick={() => setCurrentPage(index + 1)}
-                      className={`w-10 h-10 rounded-lg font-semibold transition ${
-                        currentPage === index + 1
+                      className={`w-10 h-10 rounded-lg font-semibold transition ${currentPage === index + 1
                           ? 'bg-blue-600 text-white'
                           : 'border-2 border-gray-200 text-gray-700 hover:border-blue-300'
-                      }`}
+                        }`}
                     >
                       {index + 1}
                     </button>
@@ -619,11 +480,10 @@ export default function BrowseUMKM() {
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className={`p-2 rounded-lg border-2 transition ${
-                      currentPage === totalPages
+                    className={`p-2 rounded-lg border-2 transition ${currentPage === totalPages
                         ? 'border-gray-200 text-gray-400 cursor-not-allowed'
                         : 'border-gray-300 text-gray-700 hover:border-blue-600 hover:text-blue-600'
-                    }`}
+                      }`}
                   >
                     <ChevronRight size={20} />
                   </button>

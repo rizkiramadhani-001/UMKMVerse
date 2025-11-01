@@ -1,27 +1,87 @@
-import { useState } from 'react';
+// src/components/DashboardTopbar.jsx
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Search, LogOut, User, Settings } from 'lucide-react';
+import echo from '../../utils/echo';
+import axios from 'axios';
 
 export default function DashboardTopbar({ title = 'Dashboard' }) {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   const handleLogout = () => {
-    // TODO: Clear auth state (nanti integrate dengan context)
-    // localStorage.removeItem('token');
+    sessionStorage.clear();
     alert('Logout berhasil!');
     navigate('/login');
   };
 
-  // Dummy notifications
-  const notifications = [
-    { id: 1, title: 'Investasi Baru', message: 'Anda mendapat investor baru', time: '5 menit lalu', unread: true },
-    { id: 2, title: 'Pesanan Masuk', message: 'Pesanan #1234 telah dikonfirmasi', time: '1 jam lalu', unread: true },
-    { id: 3, title: 'Kontrak Disetujui', message: 'Kontrak dengan PT ABC telah disetujui', time: '2 jam lalu', unread: false }
-  ];
+  // Listen to Laravel Reverb channel
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get('http://127.0.0.1:8000/api/getMe', {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+          },
+        });
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+        const response = await axios.get('http://127.0.0.1:8000/api/chats', {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+          },
+        }).then((res) => {
+            console.log('Fetched chats:', res.data);
+            res.data.forEach((chat) => {
+              const channel = echo.channel(`broadcast.`+chat.id);
+              console.log('Subscribed to channel:', `broadcast.`+chat.id); 
+              channel.listen('.message.sent', (data) => {
+                console.log('🔔 New message notification:', data);
+                setNotifications((prev) => [
+                  {
+                    ...data.message,
+                    title: 'Pesan Baru',
+                    message: data.message.message,
+                    time: new Date(data.message.created_at).toLocaleTimeString(),
+                    unread: true,
+                    id: data.message.id,
+                  },
+                  ...prev,
+                ]);
+              });
+            } );
+    })
+
+          .catch((err) => { console.error('Failed to fetch chats:', err); });
+
+        console.log('Authenticated user ID:', response);
+        // Subscribe to private user channel
+        const channel = echo.channel(`broadcast.`);
+        channel.listen('.message.sent', (data) => {
+          console.log('🔔 New message notification:', data);
+          setNotifications((prev) => [
+            {
+              ...data.message,
+              title: 'Pesan Baru',
+              message: data.message.message,
+              time: new Date(data.message.created_at).toLocaleTimeString(),
+              unread: true,
+              id: data.message.id,
+            },
+            ...prev,
+          ]);
+        });
+      } catch (err) {
+        console.error('Failed to fetch user or subscribe channel:', err);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
 
   return (
     <header className="fixed top-0 right-0 left-64 h-16 bg-white border-b border-gray-200 z-40">
@@ -29,7 +89,7 @@ export default function DashboardTopbar({ title = 'Dashboard' }) {
         {/* Left: Title & Search */}
         <div className="flex items-center space-x-6 flex-1">
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          
+
           {/* Search Bar */}
           <div className="hidden md:flex items-center flex-1 max-w-md">
             <div className="relative w-full">
@@ -66,25 +126,26 @@ export default function DashboardTopbar({ title = 'Dashboard' }) {
                   <h3 className="font-semibold text-gray-900">Notifikasi</h3>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 ${
-                        notif.unread ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3">
-                        {notif.unread && (
-                          <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
-                        )}
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900">{notif.title}</p>
-                          <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
-                          <p className="text-xs text-gray-400 mt-1">{notif.time}</p>
+                  {notifications.length === 0 ? (
+                    <p className="text-sm text-gray-500 px-4 py-3">Belum ada notifikasi</p>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 ${notif.unread ? 'bg-blue-50' : ''
+                          }`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          {notif.unread && <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>}
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-900">{notif.title}</p>
+                            <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
+                            <p className="text-xs text-gray-400 mt-1">{notif.time}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 <div className="px-4 py-2 border-t border-gray-100">
                   <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">

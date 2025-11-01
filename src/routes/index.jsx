@@ -254,7 +254,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'chat',
-        element: <InvestorChat />
+        element: <UMKMChat />
       },
       {
         path: 'settings',
@@ -289,7 +289,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'chat',
-        element: <SupplierChat />
+        element: <UMKMChat />
       },
       {
         path: 'product-form',
@@ -309,41 +309,37 @@ const router = createBrowserRouter([
   // ========================================
   // DISTRIBUTOR DASHBOARD ROUTES
   // ========================================
-  // {
-  //   path: '/distributor-dashboard',
-  //   element: <DistributorLayout />,
-  //   children: [
-  //     {
-  //       index: true,
-  //       element: <DistributorDashboard />
-  //     },
-  //     // TODO: Uncomment ketika pages sudah dibuat
-  //     {
-  //       path: 'orders',
-  //       element: <DistributorOrders />
-  //     },
-  //     {
-  //       path: 'tracking',
-  //       element: <DistributorTracking />
-  //     },
-  //     {
-  //       path: 'contracts',
-  //       element: <DistributorContracts />
-  //     },
-  //     {
-  //       path: 'chat',
-  //       element: <DistributorChat />
-  //     },
-  //     {
-  //       path: 'forum',
-  //       element: <DistributorForum />
-  //     },
-  //     {
-  //       path: 'settings',
-  //       element: <DistributorSettings />
-  //     }
-  //   ]
-  // },
+  {
+    path: '/distributor-dashboard',
+    element: <DistributorLayout />,
+    children: [
+      {
+        index: true,
+        element: <DistributorDashboard />
+      },
+      // TODO: Uncomment ketika pages sudah dibuat
+      {
+        path: 'orders',
+        element: <DistributorOrders />
+      },
+      {
+        path: 'contracts',
+        element: <DistributorContracts />
+      },
+      {
+        path: 'chat',
+        element: <DistributorChat />
+      },
+      {
+        path: 'forum',
+        element: <DistributorForum />
+      },
+      {
+        path: 'settings',
+        element: <DistributorSettings />
+      }
+    ]
+  },
 
   // ========================================
   // ADMIN DASHBOARD ROUTES

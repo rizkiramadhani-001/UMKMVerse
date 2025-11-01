@@ -1,5 +1,5 @@
-// src/pages/public/BrowseUMKM.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -7,7 +7,6 @@ import {
   Star,
   TrendingUp,
   Users,
-  Filter,
   X,
   ChevronRight,
   ChevronLeft,
@@ -16,642 +15,270 @@ import {
 
 export default function BrowseUMKM() {
   const navigate = useNavigate();
-  
+
+  const [allUMKM, setAllUMKM] = useState([]); // data dari backend
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState('popular'); // popular, newest, roi, investment
+  const [sortBy, setSortBy] = useState('popular');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
-  // Filter states
   const [filters, setFilters] = useState({
     minInvestment: '',
     maxInvestment: '',
     location: '',
     minRating: 0,
-    investmentProgress: 'all' // all, below50, above50
+    investmentProgress: 'all'
   });
 
-  const categories = [
-    { id: 'all', name: 'Semua', icon: '🏢', count: 456 },
-    { id: 'fnb', name: 'Food & Beverage', icon: '🍔', count: 189 },
-    { id: 'agrikultur', name: 'Agrikultur', icon: '🌾', count: 142 },
-    { id: 'service', name: 'Service / Jasa', icon: '⚙️', count: 125 }
-  ];
+useEffect(() => {
+  const fetchUMKM = async () => {
+    try {
+      setIsLoading(true);
+      const res = await axios.get('http://127.0.0.1:8000/api/umkm', {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+        },
+      });
 
-  // Dummy UMKM data - nanti ganti dengan API
-  const allUMKM = [
-    {
-      id: 1,
-      name: 'Warung Kopi Nusantara',
-      category: 'fnb',
-      description: 'Kedai kopi dengan biji kopi pilihan dari berbagai daerah di Indonesia dengan cita rasa premium',
-      location: 'Jakarta Selatan',
-      rating: 4.8,
-      reviewCount: 124,
-      image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
-      invested: 60,
-      minInvest: 5000000,
-      targetInvest: 100000000,
-      roi: 18.5,
-      investorCount: 24,
-      verified: true
-    },
-    {
-      id: 2,
-      name: 'Tani Organik Sejahtera',
-      category: 'agrikultur',
-      description: 'Produsen sayuran organik berkualitas tinggi dengan metode pertanian modern dan berkelanjutan',
-      location: 'Bandung, Jawa Barat',
-      rating: 4.9,
-      reviewCount: 89,
-      image: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&h=300&fit=crop',
-      invested: 45,
-      minInvest: 10000000,
-      targetInvest: 200000000,
-      roi: 22.3,
-      investorCount: 18,
-      verified: true
-    },
-    {
-      id: 3,
-      name: 'Bakery Roti Hangat',
-      category: 'fnb',
-      description: 'Toko roti artisan dengan resep tradisional dan bahan berkualitas premium',
-      location: 'Surabaya, Jawa Timur',
-      rating: 4.7,
-      reviewCount: 156,
-      image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop',
-      invested: 75,
-      minInvest: 3000000,
-      targetInvest: 50000000,
-      roi: 15.2,
-      investorCount: 32,
-      verified: true
-    },
-    {
-      id: 4,
-      name: 'Laundry Express 24/7',
-      category: 'service',
-      description: 'Layanan laundry premium dengan pickup & delivery service 24 jam',
-      location: 'Jakarta Pusat',
-      rating: 4.6,
-      reviewCount: 203,
-      image: 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=400&h=300&fit=crop',
-      invested: 30,
-      minInvest: 8000000,
-      targetInvest: 150000000,
-      roi: 12.8,
-      investorCount: 15,
-      verified: true
-    },
-    {
-      id: 5,
-      name: 'Hidroponik Modern Farm',
-      category: 'agrikultur',
-      description: 'Pertanian hidroponik untuk sayuran segar tanpa pestisida dengan teknologi otomasi',
-      location: 'Bogor, Jawa Barat',
-      rating: 4.8,
-      reviewCount: 67,
-      image: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=400&h=300&fit=crop',
-      invested: 55,
-      minInvest: 15000000,
-      targetInvest: 300000000,
-      roi: 20.5,
-      investorCount: 22,
-      verified: true
-    },
-    {
-      id: 6,
-      name: 'Service AC Pro',
-      category: 'service',
-      description: 'Jasa service dan instalasi AC untuk rumah dan kantor dengan garansi terpercaya',
-      location: 'Tangerang, Banten',
-      rating: 4.5,
-      reviewCount: 178,
-      image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400&h=300&fit=crop',
-      invested: 20,
-      minInvest: 5000000,
-      targetInvest: 80000000,
-      roi: 14.2,
-      investorCount: 12,
-      verified: false
-    },
-    {
-      id: 7,
-      name: 'Kedai Sate Madura',
-      category: 'fnb',
-      description: 'Sate khas Madura dengan bumbu rahasia turun temurun dan daging pilihan',
-      location: 'Malang, Jawa Timur',
-      rating: 4.9,
-      reviewCount: 245,
-      image: 'https://images.unsplash.com/photo-1529042410759-befb1204b468?w=400&h=300&fit=crop',
-      invested: 85,
-      minInvest: 2000000,
-      targetInvest: 30000000,
-      roi: 19.8,
-      investorCount: 45,
-      verified: true
-    },
-    {
-      id: 8,
-      name: 'Peternakan Ayam Modern',
-      category: 'agrikultur',
-      description: 'Peternakan ayam kampung organik dengan sistem kandang modern',
-      location: 'Yogyakarta',
-      rating: 4.6,
-      reviewCount: 92,
-      image: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&h=300&fit=crop',
-      invested: 40,
-      minInvest: 12000000,
-      targetInvest: 250000000,
-      roi: 17.5,
-      investorCount: 19,
-      verified: true
-    },
-    {
-      id: 9,
-      name: 'Salon & Spa Premium',
-      category: 'service',
-      description: 'Salon dan spa dengan peralatan modern dan terapis bersertifikat',
-      location: 'Jakarta Selatan',
-      rating: 4.7,
-      reviewCount: 134,
-      image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&h=300&fit=crop',
-      invested: 65,
-      minInvest: 20000000,
-      targetInvest: 400000000,
-      roi: 16.3,
-      investorCount: 28,
-      verified: true
-    },
-    // Tambahkan lebih banyak data untuk pagination demo
-    {
-      id: 10,
-      name: 'Rumah Makan Padang Sederhana',
-      category: 'fnb',
-      description: 'Rumah makan Padang dengan cita rasa autentik dan harga terjangkau',
-      location: 'Padang, Sumatera Barat',
-      rating: 4.8,
-      reviewCount: 312,
-      image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop',
-      invested: 90,
-      minInvest: 1000000,
-      targetInvest: 20000000,
-      roi: 21.5,
-      investorCount: 58,
-      verified: true
+      // Cek apakah data array ada di res.data.data atau langsung di res.data
+      const dataArray = Array.isArray(res.data) ? res.data : res.data.data;
+
+      const formattedData = (dataArray || []).map((item) => ({
+        id: item.id,
+        name: item.namaUmkm,
+        category: item.bidangUsaha?.toLowerCase() || 'lainnya',
+        description: item.deskripsiSingkat || '-',
+        location: item.lokasiUsaha || '-',
+        rating: 4.8,
+        reviewCount: 0,
+        image:
+          item.foto_produk?.length > 0
+            ? `http://127.0.0.1:8000/storage/${item.foto_produk[0].path}`
+            : 'https://via.placeholder.com/400x300?text=No+Image',
+        invested: 60,
+        minInvest: item.minInvestasi || 0,
+        targetInvest: item.targetInvestasi || 0,
+        roi: 18.5,
+        investorCount: 10,
+        verified: true,
+      }));
+
+      setAllUMKM(formattedData);
+    } catch (err) {
+      console.error('Error fetching UMKM:', err);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
-  // Filter UMKM
-  const filteredUMKM = allUMKM.filter(umkm => {
-    // Category filter
-    if (selectedCategory !== 'all' && umkm.category !== selectedCategory) return false;
+  fetchUMKM();
+}, []);
 
-    // Search query
-    if (searchQuery && !umkm.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !umkm.description.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
 
-    // Location filter
-    if (filters.location && !umkm.location.toLowerCase().includes(filters.location.toLowerCase())) {
-      return false;
-    }
-
-    // Min Investment filter
-    if (filters.minInvestment && umkm.minInvest < parseInt(filters.minInvestment)) {
-      return false;
-    }
-
-    // Max Investment filter
-    if (filters.maxInvestment && umkm.minInvest > parseInt(filters.maxInvestment)) {
-      return false;
-    }
-
-    // Rating filter
-    if (filters.minRating && umkm.rating < filters.minRating) {
-      return false;
-    }
-
-    // Investment progress filter
-    if (filters.investmentProgress === 'below50' && umkm.invested >= 50) return false;
-    if (filters.investmentProgress === 'above50' && umkm.invested < 50) return false;
-
-    return true;
+  // 🔍 Filter dan pencarian
+  const filteredUMKM = allUMKM.filter((umkm) => {
+    const matchesSearch =
+      umkm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      umkm.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      selectedCategory === 'all' || umkm.category === selectedCategory;
+    const matchesLocation =
+      !filters.location ||
+      umkm.location.toLowerCase().includes(filters.location.toLowerCase());
+    const matchesMinInvest =
+      !filters.minInvestment || umkm.minInvest >= filters.minInvestment;
+    const matchesMaxInvest =
+      !filters.maxInvestment || umkm.minInvest <= filters.maxInvestment;
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesLocation &&
+      matchesMinInvest &&
+      matchesMaxInvest
+    );
   });
 
-  // Sort UMKM
-  const sortedUMKM = [...filteredUMKM].sort((a, b) => {
-    switch (sortBy) {
-      case 'newest':
-        return b.id - a.id;
-      case 'roi':
-        return b.roi - a.roi;
-      case 'investment':
-        return a.minInvest - b.minInvest;
-      case 'popular':
-      default:
-        return b.investorCount - a.investorCount;
-    }
-  });
+  // 📄 Pagination
+  const totalPages = Math.ceil(filteredUMKM.length / itemsPerPage);
+  const paginatedUMKM = filteredUMKM.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-  // Pagination
-  const totalPages = Math.ceil(sortedUMKM.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUMKM = sortedUMKM.slice(startIndex, startIndex + itemsPerPage);
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+  // 🔄 Fungsi ganti halaman
+  const changePage = (direction) => {
+    setCurrentPage((prev) =>
+      direction === 'next'
+        ? Math.min(prev + 1, totalPages)
+        : Math.max(prev - 1, 1)
+    );
   };
 
-  const resetFilters = () => {
-    setFilters({
-      minInvestment: '',
-      maxInvestment: '',
-      location: '',
-      minRating: 0,
-      investmentProgress: 'all'
-    });
-    setSearchQuery('');
-    setSelectedCategory('all');
-  };
-
-  const handleCardClick = (umkmId) => {
-    navigate(`/umkm/${umkmId}`);
-  };
+  // 🧭 Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-600 text-lg font-semibold animate-pulse">
+          Loading data UMKM...
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-block mb-4 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-            🔍 Explore UMKM Potensial
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-            Temukan UMKM Terbaik untuk Investasi
-          </h1>
-          <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto">
-            Jelajahi {allUMKM.length}+ UMKM terverifikasi di berbagai kategori bisnis
-          </p>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      {/* 🔍 Search Bar */}
+      <div className="max-w-6xl mx-auto mb-6 flex items-center gap-3">
+        <div className="flex-grow flex items-center bg-white rounded-xl shadow px-4 py-2">
+          <Search className="text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Cari UMKM atau bidang usaha..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-3 py-2 focus:outline-none bg-transparent"
+          />
+        </div>
 
-          {/* Search Bar */}
-          <div className="max-w-3xl mx-auto mb-8">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={24} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari nama UMKM atau kata kunci..."
-                className="w-full pl-14 pr-4 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-lg"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={24} />
-                </button>
-              )}
-            </div>
-          </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition"
+        >
+          <SlidersHorizontal className="w-5 h-5" />
+          Filter
+        </button>
+      </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-            <div className="bg-white p-4 rounded-xl shadow-md">
-              <div className="text-3xl font-bold text-blue-600">{allUMKM.length}</div>
-              <div className="text-sm text-gray-600">UMKM Terdaftar</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-md">
-              <div className="text-3xl font-bold text-green-600">Rp 2.5M+</div>
-              <div className="text-sm text-gray-600">Dana Terkumpul</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-md">
-              <div className="text-3xl font-bold text-purple-600">18.5%</div>
-              <div className="text-sm text-gray-600">Avg ROI</div>
-            </div>
+      {/* 🧾 Filters */}
+      {showFilters && (
+        <div className="max-w-6xl mx-auto bg-white p-4 rounded-xl shadow mb-6">
+          <div className="flex flex-wrap gap-4">
+            <input
+              type="text"
+              placeholder="Lokasi"
+              value={filters.location}
+              onChange={(e) =>
+                setFilters({ ...filters, location: e.target.value })
+              }
+              className="border px-3 py-2 rounded-lg"
+            />
+            <input
+              type="number"
+              placeholder="Min Investasi"
+              value={filters.minInvestment}
+              onChange={(e) =>
+                setFilters({ ...filters, minInvestment: e.target.value })
+              }
+              className="border px-3 py-2 rounded-lg"
+            />
+            <input
+              type="number"
+              placeholder="Max Investasi"
+              value={filters.maxInvestment}
+              onChange={(e) =>
+                setFilters({ ...filters, maxInvestment: e.target.value })
+              }
+              className="border px-3 py-2 rounded-lg"
+            />
+            <button
+              onClick={() =>
+                setFilters({
+                  minInvestment: '',
+                  maxInvestment: '',
+                  location: '',
+                  minRating: 0,
+                  investmentProgress: 'all',
+                })
+              }
+              className="flex items-center gap-2 text-gray-500 hover:text-red-500"
+            >
+              <X className="w-4 h-4" /> Reset
+            </button>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* Category Filter */}
-      <section className="px-4 sm:px-6 lg:px-8 mb-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap justify-center gap-4">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => {
-                  setSelectedCategory(cat.id);
-                  setCurrentPage(1);
-                }}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 flex items-center space-x-2 ${
-                  selectedCategory === cat.id
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
-                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <span className="text-xl">{cat.icon}</span>
-                <span>{cat.name}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                  selectedCategory === cat.id ? 'bg-white/20' : 'bg-gray-100'
-                }`}>
-                  {cat.count}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Filter & Sort Bar */}
-      <section className="px-4 sm:px-6 lg:px-8 mb-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center space-x-2 px-4 py-2 border-2 border-gray-200 rounded-xl font-semibold hover:border-blue-300 hover:text-blue-600 transition"
-                >
-                  <SlidersHorizontal size={20} />
-                  <span>Filter</span>
-                  {Object.values(filters).some(v => v && v !== 'all' && v !== 0) && (
-                    <span className="px-2 py-0.5 bg-blue-600 text-white rounded-full text-xs">
-                      {Object.values(filters).filter(v => v && v !== 'all' && v !== 0).length}
-                    </span>
-                  )}
-                </button>
-
-                {Object.values(filters).some(v => v && v !== 'all' && v !== 0) && (
-                  <button
-                    onClick={resetFilters}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
-                  >
-                    Reset Filter
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-600 font-medium">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 border-2 border-gray-200 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                >
-                  <option value="popular">Paling Populer</option>
-                  <option value="newest">Terbaru</option>
-                  <option value="roi">ROI Tertinggi</option>
-                  <option value="investment">Min. Investasi</option>
-                </select>
-
-                <div className="text-sm text-gray-600">
-                  <span className="font-semibold text-gray-900">{filteredUMKM.length}</span> hasil ditemukan
-                </div>
-              </div>
-            </div>
-
-            {/* Advanced Filters */}
-            {showFilters && (
-              <div className="mt-4 pt-4 border-t border-gray-200 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Min. Investasi (Rp)</label>
-                  <input
-                    type="number"
-                    value={filters.minInvestment}
-                    onChange={(e) => setFilters({ ...filters, minInvestment: e.target.value })}
-                    placeholder="0"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Max. Investasi (Rp)</label>
-                  <input
-                    type="number"
-                    value={filters.maxInvestment}
-                    onChange={(e) => setFilters({ ...filters, maxInvestment: e.target.value })}
-                    placeholder="Unlimited"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Lokasi</label>
-                  <input
-                    type="text"
-                    value={filters.location}
-                    onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                    placeholder="Cari kota..."
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Progress Investasi</label>
-                  <select
-                    value={filters.investmentProgress}
-                    onChange={(e) => setFilters({ ...filters, investmentProgress: e.target.value })}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">Semua</option>
-                    <option value="below50">Di bawah 50%</option>
-                    <option value="above50">Di atas 50%</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* UMKM Grid */}
-      <section className="px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="max-w-7xl mx-auto">
-          {paginatedUMKM.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Tidak ada hasil ditemukan</h3>
-              <p className="text-gray-600 mb-6">Coba ubah filter atau kata kunci pencarian Anda</p>
-              <button
-                onClick={resetFilters}
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
-              >
-                Reset Semua Filter
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-                {paginatedUMKM.map((umkm) => (
-                  <div
-                    key={umkm.id}
-                    onClick={() => handleCardClick(umkm.id)}
-                    className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border-2 border-transparent hover:border-blue-200"
-                  >
-                    {/* Image */}
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={umkm.image}
-                        alt={umkm.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute top-4 right-4 flex flex-col space-y-2">
-                        {umkm.verified && (
-                          <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-semibold flex items-center space-x-1">
-                            <span>✓</span>
-                            <span>Verified</span>
-                          </span>
-                        )}
-                        <span className="px-3 py-1 bg-white text-blue-600 rounded-full text-sm font-semibold">
-                          {umkm.invested}% Terpenuhi
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition">
-                        {umkm.name}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {umkm.description}
-                      </p>
-
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center text-gray-500 text-sm">
-                          <MapPin size={16} className="mr-1" />
-                          {umkm.location}
-                        </div>
-                        <div className="flex items-center text-yellow-500">
-                          <Star size={16} fill="currentColor" className="mr-1" />
-                          <span className="text-gray-900 font-semibold">{umkm.rating}</span>
-                          <span className="text-gray-500 text-sm ml-1">({umkm.reviewCount})</span>
-                        </div>
-                      </div>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-blue-50 p-3 rounded-xl">
-                          <div className="flex items-center space-x-2 text-blue-600 mb-1">
-                            <TrendingUp size={16} />
-                            <span className="text-xs font-medium">ROI</span>
-                          </div>
-                          <div className="text-lg font-bold text-gray-900">{umkm.roi}%</div>
-                        </div>
-                        <div className="bg-green-50 p-3 rounded-xl">
-                          <div className="flex items-center space-x-2 text-green-600 mb-1">
-                            <Users size={16} />
-                            <span className="text-xs font-medium">Investor</span>
-                          </div>
-                          <div className="text-lg font-bold text-gray-900">{umkm.investorCount}</div>
-                        </div>
-                      </div>
-
-                      {/* Investment Progress Bar */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-                          <span>Progress Investasi</span>
-                          <span className="font-semibold">{umkm.invested}%</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 h-2 rounded-full transition-all"
-                            style={{ width: `${umkm.invested}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="border-t pt-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-gray-500">Min. Investasi</p>
-                            <p className="text-lg font-bold text-gray-900">{formatCurrency(umkm.minInvest)}</p>
-                          </div>
-                          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center space-x-1 group-hover:scale-105 transform">
-                            <span>Lihat Detail</span>
-                            <ChevronRight size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center space-x-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className={`p-2 rounded-lg border-2 transition ${
-                      currentPage === 1
-                        ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'border-gray-300 text-gray-700 hover:border-blue-600 hover:text-blue-600'
-                    }`}
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-
-                  {[...Array(totalPages)].map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentPage(index + 1)}
-                      className={`w-10 h-10 rounded-lg font-semibold transition ${
-                        currentPage === index + 1
-                          ? 'bg-blue-600 text-white'
-                          : 'border-2 border-gray-200 text-gray-700 hover:border-blue-300'
-                      }`}
-                    >
-                      {index + 1}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className={`p-2 rounded-lg border-2 transition ${
-                      currentPage === totalPages
-                        ? 'border-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'border-gray-300 text-gray-700 hover:border-blue-600 hover:text-blue-600'
-                    }`}
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="max-w-4xl mx-auto bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 rounded-3xl p-12 text-center shadow-2xl">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Punya UMKM?
-          </h2>
-          <p className="text-blue-100 mb-8 text-lg">
-            Daftarkan UMKM Anda dan dapatkan akses ke ribuan investor potensial
-          </p>
-          <button
-            onClick={() => navigate('/register')}
-            className="px-10 py-4 bg-white text-blue-600 rounded-xl text-lg font-bold hover:bg-gray-50 hover:shadow-2xl hover:scale-105 transition transform inline-flex items-center space-x-2"
+      {/* 🏪 Grid UMKM */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {paginatedUMKM.map((umkm) => (
+          <div
+            key={umkm.id}
+            className="bg-white rounded-2xl shadow hover:shadow-lg transition overflow-hidden group cursor-pointer"
+            onClick={() => navigate(`/umkm/${umkm.id}`)}
           >
-            <span>Daftar Sebagai UMKM</span>
-            <ChevronRight size={20} />
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src={umkm.image}
+                alt={umkm.name}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+              {umkm.verified && (
+                <span className="absolute top-3 left-3 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                  Verified
+                </span>
+              )}
+            </div>
+
+            <div className="p-4">
+              <h3 className="font-semibold text-lg text-gray-800 truncate">
+                {umkm.name}
+              </h3>
+              <div className="flex items-center text-gray-500 text-sm mt-1">
+                <MapPin className="w-4 h-4 mr-1" /> {umkm.location}
+              </div>
+              <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                {umkm.description}
+              </p>
+
+              <div className="mt-3 flex justify-between items-center text-sm text-gray-700">
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-400" />
+                  {umkm.rating} ({umkm.reviewCount})
+                </div>
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="w-4 h-4 text-green-500" /> ROI {umkm.roi}%
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-between items-center border-t pt-3">
+                <span className="text-blue-600 font-semibold text-sm">
+                  Rp {umkm.minInvest.toLocaleString()}
+                </span>
+                <div className="flex items-center text-gray-500 text-xs">
+                  <Users className="w-4 h-4 mr-1" /> {umkm.investorCount} Investor
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 📄 Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-3 mt-8">
+          <button
+            onClick={() => changePage('prev')}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg border hover:bg-gray-100 disabled:opacity-50"
+          >
+            <ChevronLeft />
+          </button>
+          <span className="text-gray-700 font-medium">
+            Halaman {currentPage} dari {totalPages}
+          </span>
+          <button
+            onClick={() => changePage('next')}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg border hover:bg-gray-100 disabled:opacity-50"
+          >
+            <ChevronRight />
           </button>
         </div>
-      </section>
+      )}
     </div>
   );
 }
