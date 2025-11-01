@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Laravel Echo Reverb CDN Test</title>
+
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/laravel-echo/1.16.0/echo.iife.min.js"></script>
+    
+    </head>
+<body>
+
+<script>
+    // CRITICAL: Ensure 'Echo' is defined globally
+    if (typeof Echo === 'undefined') {
+        console.error("Laravel Echo is not loaded. Check the CDN script tag.");
+    }
+
+    // FIX 3: Initialize Echo with correct Reverb configuration.
+    // The key is essential for connection.
+    const echo = new Echo({
+        broadcaster: 'reverb',
+        
+        // **REQUIRED**: Replace with your actual Reverb application key (from .env or config)
+        key: 'cpcjylkqykmpqjnhuj4s', 
+        
+        // Reverb expects wsHost and wsPort for connections
+        wsHost: '127.0.0.1',             // The IP/hostname where Reverb is running
+        wsPort: 8080,                    // The WebSocket port Reverb is listening on
+        
+        // Set to true if your server uses WSS (secure) connection
+        forceTLS: false,                 
+        
+        disableStats: true,              // Optional: removes stats endpoint calls
+        
+        // IMPORTANT for local testing: This tells the client to use HTTP for auth endpoint
+        // You would typically set this if your Laravel backend is on 127.0.0.1:8000
+        enabledTransports: ['ws', 'wss'],
+    });
+
+    console.log(echo);
+
+    echo.channel('broadcast.2')
+        .listen('message.sent', function(event) {
+            // This is where you process the real-time event
+            console.log('Received event:', event);
+            document.body.innerHTML += `<p>Message Received: ${JSON.stringify(event)}</p>`;
+        })
+        .error((error) => {
+             console.error('Error on channel subscription:', error);
+        });
+</script>
+
+<h1>Reverb Connection Test</h1>
+<p>Check the console for connection status and received events.</p>
+
+</body>
+</html>
