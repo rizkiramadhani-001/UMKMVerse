@@ -19,30 +19,10 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
 
   const roles = [
-    {
-      id: 'umkm',
-      name: 'UMKM Owner',
-      description: 'Pemilik usaha UMKM yang mencari investor',
-      icon: <Building2 size={24} />
-    },
-    {
-      id: 'investor',
-      name: 'Investor',
-      description: 'Berinvestasi di UMKM potensial',
-      icon: <TrendingUp size={24} />
-    },
-    {
-      id: 'supplier',
-      name: 'Supplier',
-      description: 'Menyediakan bahan baku untuk UMKM',
-      icon: <Package size={24} />
-    },
-    {
-      id: 'distributor',
-      name: 'Distributor',
-      description: 'Mendistribusikan produk UMKM',
-      icon: <Truck size={24} />
-    }
+    { id: 'umkm', name: 'UMKM Owner', description: 'Pemilik usaha UMKM yang mencari investor', icon: <Building2 size={24} /> },
+    { id: 'investor', name: 'Investor', description: 'Berinvestasi di UMKM potensial', icon: <TrendingUp size={24} /> },
+    { id: 'supplier', name: 'Supplier', description: 'Menyediakan bahan baku untuk UMKM', icon: <Package size={24} /> },
+    { id: 'distributor', name: 'Distributor', description: 'Mendistribusikan produk UMKM', icon: <Truck size={24} /> }
   ];
 
   const handleChange = (e) => {
@@ -51,63 +31,44 @@ export default function Register() {
       ...prev,
       [name]: value
     }));
+
+    // Clear error saat user mengetik ulang
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: '' }));
     }
   };
 
   const handleRoleSelect = (roleId) => {
-    setFormData(prev => ({
-      ...prev,
-      role: roleId
-    }));
+    setFormData(prev => ({ ...prev, role: roleId }));
     if (errors.role) {
-      setErrors(prev => ({
-        ...prev,
-        role: ''
-      }));
+      setErrors(prev => ({ ...prev, role: '' }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name) {
-      newErrors.name = 'Nama lengkap wajib diisi';
-    } else if (formData.name.length < 3) {
-      newErrors.name = 'Nama minimal 3 karakter';
-    }
+    if (!formData.name) newErrors.name = 'Nama lengkap wajib diisi';
+    else if (formData.name.length < 3) newErrors.name = 'Nama minimal 3 karakter';
 
-    if (!formData.email) {
-      newErrors.email = 'Email wajib diisi';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Format email tidak valid';
-    }
+    if (!formData.email) newErrors.email = 'Email wajib diisi';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Format email tidak valid';
 
-    if (!formData.phone) {
-      newErrors.phone = 'Nomor telepon wajib diisi';
-    } else if (!/^(\+62|62|0)[0-9]{9,12}$/.test(formData.phone.replace(/\s/g, ''))) {
+    if (!formData.phone) newErrors.phone = 'Nomor telepon wajib diisi';
+    else if (!/^(\+62|62|0)[0-9]{9,12}$/.test(formData.phone.replace(/\s/g, '')))
       newErrors.phone = 'Format nomor telepon tidak valid';
-    }
 
-    if (!formData.password) {
-      newErrors.password = 'Password wajib diisi';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password minimal 8 karakter';
-    }
+    if (!formData.password) newErrors.password = 'Password wajib diisi';
+    else if (formData.password.length < 8) newErrors.password = 'Password minimal 8 karakter';
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Konfirmasi password wajib diisi';
-    } else if (formData.password !== formData.confirmPassword) {
+    if (!formData.confirmPassword) newErrors.confirmPassword = 'Konfirmasi password wajib diisi';
+    else if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = 'Password tidak cocok';
-    }
 
-    if (!formData.role) {
-      newErrors.role = 'Pilih role terlebih dahulu';
-    }
+    if (!formData.role) newErrors.role = 'Pilih role terlebih dahulu';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -115,40 +76,59 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-
-
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
-      axios.post('http://127.0.0.1:8000/api/register', formData).then(response => {
-        console.log("Registration successful:", response);
-        sessionStorage.setItem('token', response.data.token);
-        navigate(response.data.redirect_url);
-      }).catch(error => {
-        console.error("Registration error:", error);
-      });
+    try {
+      const response = await axios.post('http://127.0.0.1:8000/api/register', formData);
 
-    // // Simulasi cek ke API dulu (nanti integrate dengan backend Riski)
-    // setTimeout(() => {
-    //   setIsLoading(false);
-    //   console.log('Basic Register data:', formData);
-      
-    //   // Redirect ke halaman register detail berdasarkan role
-    //   navigate(`/register-${formData.role}`, { 
-    //     state: { 
-    //       basicData: {
-    //         name: formData.name,
-    //         email: formData.email,
-    //         phone: formData.phone,
-    //         password: formData.password,
-    //         role: formData.role
-    //       }
-    //     } 
-    //   });
-    // }, 1000);
+      console.log("Registration successful:", response.data);
+      sessionStorage.setItem('token', response.data.token);
+      navigate(response.data.redirect_url);
+    } catch (error) {
+      console.error("Registration error:", error);
+
+      if (error.response) {
+        // Tangkap pesan dari server
+        const status = error.response.status;
+        const data = error.response.data;
+
+        if (status === 409 || status === 422) {
+          // Kasus user sudah ada atau validasi gagal
+          const newErrors = {};
+
+          if (data.errors) {
+            // Laravel-style validation (data.errors.email[0], dll)
+            if (data.errors.email) newErrors.email = data.errors.email[0];
+            if (data.errors.phone) newErrors.phone = data.errors.phone[0];
+            if (data.errors.password) newErrors.password = data.errors.password[0];
+          } else if (data.message) {
+            newErrors.general = data.message;
+          } else {
+            newErrors.general = "Registrasi gagal. Periksa kembali data Anda.";
+          }
+
+          setErrors(newErrors);
+        } else {
+          // Error umum dari server
+          setErrors({
+            general: data.message || "Terjadi kesalahan pada server. Coba lagi nanti."
+          });
+        }
+      } else if (error.request) {
+        // Tidak ada respon dari server
+        setErrors({
+          general: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda."
+        });
+      } else {
+        // Error konfigurasi axios atau lainnya
+        setErrors({
+          general: "Terjadi kesalahan tak terduga. Silakan coba lagi."
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -215,180 +195,31 @@ export default function Register() {
               )}
             </div>
 
+            {/* --- INPUT FIELDS --- */}
+            {/* Name + Email */}
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Name Input */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Nama Lengkap <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                      errors.name ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                    placeholder="Nama Anda"
-                  />
-                </div>
-                {errors.name && (
-                  <div className="flex items-center space-x-1 mt-2 text-red-600 text-sm">
-                    <AlertCircle size={16} />
-                    <span>{errors.name}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Email Input */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                      errors.email ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                    placeholder="nama@email.com"
-                  />
-                </div>
-                {errors.email && (
-                  <div className="flex items-center space-x-1 mt-2 text-red-600 text-sm">
-                    <AlertCircle size={16} />
-                    <span>{errors.email}</span>
-                  </div>
-                )}
-              </div>
+              <InputField label="Nama Lengkap" id="name" name="name" value={formData.name} icon={<User />} placeholder="Nama Anda" error={errors.name} onChange={handleChange} />
+              <InputField label="Email" id="email" name="email" value={formData.email} icon={<Mail />} placeholder="nama@email.com" error={errors.email} onChange={handleChange} />
             </div>
 
-            {/* Phone Input */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
-                Nomor Telepon <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                    errors.phone ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                  placeholder="08123456789 atau +628123456789"
-                />
-              </div>
-              {errors.phone && (
-                <div className="flex items-center space-x-1 mt-2 text-red-600 text-sm">
-                  <AlertCircle size={16} />
-                  <span>{errors.phone}</span>
-                </div>
-              )}
-            </div>
+            {/* Phone */}
+            <InputField label="Nomor Telepon" id="phone" name="phone" value={formData.phone} icon={<Phone />} placeholder="08123456789" error={errors.phone} onChange={handleChange} />
 
+            {/* Passwords */}
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Password Input */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                      errors.password ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                    placeholder="Min. 8 karakter"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <div className="flex items-center space-x-1 mt-2 text-red-600 text-sm">
-                    <AlertCircle size={16} />
-                    <span>{errors.password}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Confirm Password Input */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Konfirmasi Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
-                      errors.confirmPassword ? 'border-red-300' : 'border-gray-200'
-                    }`}
-                    placeholder="Ulangi password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <div className="flex items-center space-x-1 mt-2 text-red-600 text-sm">
-                    <AlertCircle size={16} />
-                    <span>{errors.confirmPassword}</span>
-                  </div>
-                )}
-              </div>
+              <PasswordField label="Password" id="password" name="password" value={formData.password} show={showPassword} toggle={() => setShowPassword(!showPassword)} error={errors.password} onChange={handleChange} />
+              <PasswordField label="Konfirmasi Password" id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} show={showConfirmPassword} toggle={() => setShowConfirmPassword(!showConfirmPassword)} error={errors.confirmPassword} onChange={handleChange} />
             </div>
 
-            {/* Terms & Conditions */}
-            <div className="flex items-start space-x-2">
-              <input
-                type="checkbox"
-                id="terms"
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
-                required
-              />
-              <label htmlFor="terms" className="text-sm text-gray-600">
-                Saya setuju dengan{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Syarat & Ketentuan
-                </a>{' '}
-                dan{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Kebijakan Privasi
-                </a>
-              </label>
-            </div>
+            {/* General Server Error */}
+            {errors.general && (
+              <div className="flex items-center space-x-2 mt-2 text-red-600 text-sm text-center justify-center">
+                <AlertCircle size={16} />
+                <span>{errors.general}</span>
+              </div>
+            )}
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
@@ -414,16 +245,80 @@ export default function Register() {
           </div>
         </div>
 
-        {/* Back to Home */}
         <div className="text-center mt-6">
-          <Link 
-            to="/" 
-            className="text-gray-600 hover:text-gray-900 text-sm transition"
-          >
+          <Link to="/" className="text-gray-600 hover:text-gray-900 text-sm transition">
             ← Kembali ke Beranda
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ===== Helper Components ===== */
+
+function InputField({ label, id, name, value, icon, placeholder, error, onChange }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-semibold text-gray-700 mb-2">
+        {label} <span className="text-red-500">*</span>
+      </label>
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
+        <input
+          id={id}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
+            error ? 'border-red-300' : 'border-gray-200'
+          }`}
+        />
+      </div>
+      {error && (
+        <div className="flex items-center space-x-1 mt-2 text-red-600 text-sm">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PasswordField({ label, id, name, value, show, toggle, error, onChange }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-semibold text-gray-700 mb-2">
+        {label} <span className="text-red-500">*</span>
+      </label>
+      <div className="relative">
+        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <input
+          type={show ? 'text' : 'password'}
+          id={id}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${
+            error ? 'border-red-300' : 'border-gray-200'
+          }`}
+          placeholder="••••••••"
+        />
+        <button
+          type="button"
+          onClick={toggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        >
+          {show ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+      </div>
+      {error && (
+        <div className="flex items-center space-x-1 mt-2 text-red-600 text-sm">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   );
 }

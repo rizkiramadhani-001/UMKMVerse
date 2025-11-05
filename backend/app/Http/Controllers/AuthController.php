@@ -17,9 +17,9 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'nullable|string|max:50',
+            'phone' => 'nullable|max:50',
             'password' => ['required', Password::min(8)->mixedCase()->numbers()->symbols()],
-            'role' => 'required|in:user,admin,umkm,investor,distributor', // Add role validation (user or admin)
+            'role' => 'required', // Add role validation (user or admin)
         ]);
         if ($validator->fails()) {
             return response()->json(['error' => $request], 422);

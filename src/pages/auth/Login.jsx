@@ -14,7 +14,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Jika sudah login, langsung redirect ke halaman sebelumnya atau dashboard
+    // Jika sudah login, langsung redirect ke dashboard
     if (sessionStorage.getItem('token')) {
       navigate(sessionStorage.getItem('redirect_url') || '/dashboard');
     }
@@ -22,15 +22,22 @@ export default function Login() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
-    // Clear error saat user mulai ketik
+
+    // Hapus error saat user mulai mengetik
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [name]: ''
+      }));
+    }
+    if (errors.general) {
+      setErrors((prev) => ({
+        ...prev,
+        general: ''
       }));
     }
   };
@@ -60,25 +67,36 @@ export default function Login() {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
-    if (!sessionStorage.getItem('token')) {
-      try {
-        e.preventDefault();
-        if (!validateForm()) return;
 
-        axios.post(`http://127.0.0.1:8000/api/login`, formData)
-          .then(response => {
-            console.log("Login successful:", response.data);
-            sessionStorage.setItem('token', response.data.token);
-            sessionStorage.setItem('redirect_url', response.data.redirect_url);
-            setIsLoading(false);
-            navigate(response.data.redirect_url);
-            // Simpan token atau data user sesuai kebutuhan
-          })
-      }catch(error){
-        console.error("Login error:", error);
+    try {
+      // Kirim request ke backend
+      const response = await axios.post(`http://127.0.0.1:8000/api/login`, formData);
+
+      // Jika login berhasil
+      console.log("Login successful:", response.data);
+      sessionStorage.setItem('token', response.data.token);
+      sessionStorage.setItem('redirect_url', response.data.redirect_url);
+      navigate(response.data.redirect_url);
+    } catch (error) {
+      console.error("Login error:", error);
+
+      // Tangani error dari server
+      if (error.response) {
+        const message =
+          error.response.data?.message ||
+          "Login gagal. Periksa kembali email dan password Anda.";
+        setErrors({ general: message });
+      } else if (error.request) {
+        setErrors({
+          general: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda."
+        });
+      } else {
+        setErrors({
+          general: "Terjadi kesalahan tak terduga. Silakan coba lagi."
+        });
       }
-    }else{
-      navigate(sessionStorage.getItem('redirect_url'));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -190,6 +208,14 @@ export default function Login() {
             >
               {isLoading ? 'Memproses...' : 'Masuk'}
             </button>
+
+            {/* General Error (login gagal) */}
+            {errors.general && (
+              <div className="flex items-center justify-center space-x-2 mt-4 text-red-600 text-sm text-center">
+                <AlertCircle size={16} />
+                <span>{errors.general}</span>
+              </div>
+            )}
           </form>
 
           {/* Divider */}

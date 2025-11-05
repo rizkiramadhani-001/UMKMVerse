@@ -12,7 +12,7 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            window.Echo.channel("broadcast.2")
+            window.Echo.channel("broadcast.1")
                 .listen(".message.sent", (event) => {
                     console.log("Received:", event);
                     document.getElementById("output").textContent = JSON.stringify(event, null, 2);

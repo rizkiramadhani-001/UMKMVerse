@@ -13,7 +13,7 @@ use App\Http\Controllers\ThreadController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatMessageController;
-
+use App\Http\Controllers\Api\TransactionController;
 // Public API Routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -47,6 +47,10 @@ Route::get('/distributor/dashboard', function (Request $request) {
 
 // Create UMKM (requires authentication)
 Route::post('/umkm', [UMKMController::class, 'store'])->middleware(['auth:sanctum', 'HasRole:umkm']);
+Route::get('/umkm', [UMKMController::class, 'index']);
+Route::get('/umkm/show', [UMKMController::class, 'show'])->middleware(['auth:sanctum']);
+Route::get('/umkm/{id}/display', [UMKMController::class, 'display'])->middleware(['auth:sanctum']);
+
 Route::post('/investor', [InvestorController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/supplier', [SupplierController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/distributor', [DistributorController::class, 'store'])->middleware('auth:sanctum');
@@ -114,4 +118,15 @@ Route::get('/send-message', function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('orders', OrderController::class);
+});
+
+
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/umkm/transactions', [TransactionController::class, 'index']);
+    Route::post('/umkm/transactions', [TransactionController::class, 'store']);
+    Route::get('/umkm/transactions/{id}', [TransactionController::class, 'show']);
+    Route::put('/umkm/transactions/{id}', [TransactionController::class, 'update']);
+    Route::delete('/umkm/transactions/{id}', [TransactionController::class, 'destroy']);
 });

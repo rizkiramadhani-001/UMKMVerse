@@ -10,6 +10,7 @@ export default function DashboardTopbar({ title = 'Dashboard' }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [user, setUser] = useState(null);
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -17,60 +18,45 @@ export default function DashboardTopbar({ title = 'Dashboard' }) {
     navigate('/login');
   };
 
-  // Listen to Laravel Reverb channel
+  // Fetch user and subscribe to Reverb
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/getMe', {
+        const userRes = await axios.get('http://127.0.0.1:8000/api/getMe', {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+          },
+        });
+        setUser(userRes.data);
+        console.log('Authenticated user:', userRes.data);
+
+        // Fetch user chats
+        const chatRes = await axios.get('http://127.0.0.1:8000/api/chats', {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem('token')}`,
           },
         });
 
-        const response = await axios.get('http://127.0.0.1:8000/api/chats', {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
-          },
-        }).then((res) => {
-            console.log('Fetched chats:', res.data);
-            res.data.forEach((chat) => {
-              const channel = echo.channel(`broadcast.`+chat.id);
-              console.log('Subscribed to channel:', `broadcast.`+chat.id); 
-              channel.listen('.message.sent', (data) => {
-                console.log('🔔 New message notification:', data);
-                setNotifications((prev) => [
-                  {
-                    ...data.message,
-                    title: 'Pesan Baru',
-                    message: data.message.message,
-                    time: new Date(data.message.created_at).toLocaleTimeString(),
-                    unread: true,
-                    id: data.message.id,
-                  },
-                  ...prev,
-                ]);
-              });
-            } );
-    })
+        console.log('Fetched chats:', chatRes.data);
 
-          .catch((err) => { console.error('Failed to fetch chats:', err); });
-
-        console.log('Authenticated user ID:', response);
-        // Subscribe to private user channel
-        const channel = echo.channel(`broadcast.`);
-        channel.listen('.message.sent', (data) => {
-          console.log('🔔 New message notification:', data);
-          setNotifications((prev) => [
-            {
-              ...data.message,
-              title: 'Pesan Baru',
-              message: data.message.message,
-              time: new Date(data.message.created_at).toLocaleTimeString(),
-              unread: true,
-              id: data.message.id,
-            },
-            ...prev,
-          ]);
+        // Subscribe to each chat channel
+        chatRes.data.forEach((chat) => {
+          const channel = echo.channel(`broadcast.${chat.id}`);
+          console.log('Subscribed to channel:', `broadcast.${chat.id}`);
+          channel.listen('.message.sent', (data) => {
+            console.log('🔔 New message notification:', data);
+            setNotifications((prev) => [
+              {
+                ...data.message,
+                title: 'Pesan Baru',
+                message: data.message.message,
+                time: new Date(data.message.created_at).toLocaleTimeString(),
+                unread: true,
+                id: data.message.id,
+              },
+              ...prev,
+            ]);
+          });
         });
       } catch (err) {
         console.error('Failed to fetch user or subscribe channel:', err);
@@ -80,8 +66,18 @@ export default function DashboardTopbar({ title = 'Dashboard' }) {
     fetchUser();
   }, []);
 
-
   const unreadCount = notifications.filter((n) => n.unread).length;
+
+  // Helper to generate initials
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <header className="fixed top-0 right-0 left-64 h-16 bg-white border-b border-gray-200 z-40">
@@ -132,8 +128,9 @@ export default function DashboardTopbar({ title = 'Dashboard' }) {
                     notifications.map((notif) => (
                       <div
                         key={notif.id}
-                        className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 ${notif.unread ? 'bg-blue-50' : ''
-                          }`}
+                        className={`px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 ${
+                          notif.unread ? 'bg-blue-50' : ''
+                        }`}
                       >
                         <div className="flex items-start space-x-3">
                           {notif.unread && <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>}
@@ -163,11 +160,15 @@ export default function DashboardTopbar({ title = 'Dashboard' }) {
               className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded-lg transition"
             >
               <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white font-semibold">
-                U
+                {getInitials(user?.name)}
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-semibold text-gray-900">User Name</p>
-                <p className="text-xs text-gray-500">UMKM Owner</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {user ? user.name : 'Loading...'}
+                </p>
+                <p className="text-xs text-gray-500 capitalize">
+                  {user ? user.role : 'Fetching...'}
+                </p>
               </div>
             </button>
 

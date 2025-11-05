@@ -8,7 +8,7 @@ use App\Models\Chat;
 use App\Models\ChatMessage;
 use Illuminate\Http\Request;
 
-class ChatMessageController extends Controller
+class   ChatMessageController extends Controller
 {
     // List messages for a chat
     public function index(Request $request, Chat $chat)
@@ -37,7 +37,7 @@ class ChatMessageController extends Controller
             'message' => $request->input('message'),
         ]);
 
-        broadcast(new MessageSent($message));
+        broadcast(new MessageSent($message))->toOthers();
 
         return response()->json(['data' => $message], 201);
     }

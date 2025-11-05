@@ -21,6 +21,7 @@ class UMKM extends Model
      * @var array
      */
     protected $fillable = [
+        'user_id',
         'namaUmkm',
         'nib',
         'bidangUsaha',
@@ -57,4 +58,10 @@ class UMKM extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function fotoProduk()
+{
+    return $this->hasMany(FotoProduk::class, 'umkm_id');
+}
+
 }
