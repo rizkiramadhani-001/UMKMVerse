@@ -22,29 +22,36 @@ class TransactionController extends Controller
         return response()->json($transactions);
     }
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'type' => 'required|in:income,expense',
-            'description' => 'required|string|max:255',
-            'category' => 'nullable|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'date' => 'required|date',
-            'notes' => 'nullable|string',
-            'umkm_id' => 'nullable|exists:users,id'
-        ]);
+  public function store(Request $request)
+{
+    $user = $request->user(); // ambil user yang sedang login
 
-        // Generate trx_id automatically
-        $lastId = Transaction::max('id') + 1;
-        $validated['trx_id'] = 'TRX-' . str_pad($lastId, 3, '0', STR_PAD_LEFT);
+    $validated = $request->validate([
+        'type' => 'required|in:income,expense',
+        'description' => 'required|string|max:255',
+        'category' => 'nullable|string|max:255',
+        'amount' => 'required|numeric|min:0',
+        'date' => 'required|date',
+        'notes' => 'nullable|string',
+        // ❌ hapus validasi umkm_id dari input
+        // 'umkm_id' => 'nullable|exists:users,id'
+    ]);
 
-        $transaction = Transaction::create($validated);
+    // ✅ Isi otomatis umkm_id dengan user login
+    $validated['umkm_id'] = $user->id;
 
-        return response()->json([
-            'message' => 'Transaction created successfully.',
-            'data' => $transaction
-        ], 201);
-    }
+    // ✅ Generate trx_id otomatis
+    $lastId = Transaction::max('id') + 1;
+    $validated['trx_id'] = 'TRX-' . str_pad($lastId, 3, '0', STR_PAD_LEFT);
+
+    $transaction = Transaction::create($validated);
+
+    return response()->json([
+        'message' => 'Transaction created successfully.',
+        'data' => $transaction
+    ], 201);
+}
+
 
     public function show($id)
     {

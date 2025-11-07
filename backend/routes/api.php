@@ -13,8 +13,11 @@ use App\Http\Controllers\ThreadController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatMessageController;
+use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\Api\TransactionController;
 // Public API Routes
+
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -46,16 +49,24 @@ Route::get('/distributor/dashboard', function (Request $request) {
 //FileUpload
 
 // Create UMKM (requires authentication)
-Route::post('/umkm', [UMKMController::class, 'store'])->middleware(['auth:sanctum', 'HasRole:umkm']);
+Route::post('/umkm', [UMKMController::class, 'store'])->middleware(['auth:sanctum']);
 Route::get('/umkm', [UMKMController::class, 'index']);
+Route::get('/umkm/supplier', [UMKMController::class, 'indexSuppliers']);
+Route::get('/umkm/distributor', [UMKMController::class, 'indexDistributor']);
+
+
 Route::get('/umkm/show', [UMKMController::class, 'show'])->middleware(['auth:sanctum']);
-Route::get('/umkm/{id}/display', [UMKMController::class, 'display'])->middleware(['auth:sanctum']);
+Route::get('/umkm/{id}/display', [UMKMController::class, 'display']);
+
+Route::post('/supplier', [SupplierController::class, 'store'])->middleware('auth:sanctum');
+
 
 Route::post('/investor', [InvestorController::class, 'store'])->middleware('auth:sanctum');
-Route::post('/supplier', [SupplierController::class, 'store'])->middleware('auth:sanctum');
 Route::post('/distributor', [DistributorController::class, 'store'])->middleware('auth:sanctum');
 
 
+Route::get('/signed-umkm', [ContractController::class, 'getAllUmkmFromSignedContractsByUser'])
+    ->middleware('auth:sanctum');
 
 
 
@@ -130,3 +141,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/umkm/transactions/{id}', [TransactionController::class, 'update']);
     Route::delete('/umkm/transactions/{id}', [TransactionController::class, 'destroy']);
 });
+
+
+
+Route::prefix('contracts')->group(function () {
+    Route::get('/', [ContractController::class, 'index'])->middleware(['auth:sanctum']);
+    Route::post('/', [ContractController::class, 'store'])->middleware(['auth:sanctum']);
+    Route::post('/updateStatus', [ContractController::class, 'updateStatus']);
+
+    // ✅ Place this BEFORE any {contract} routes
+Route::get('/signed-umkm', [ContractController::class, 'getAllUmkmFromSignedContractsByUser'])
+    ->middleware('auth:sanctum');
+
+
+    // CRUD routes that use {contract} should be below
+    Route::get('/{contract}', [ContractController::class, 'show']);
+    Route::put('/{contract}', [ContractController::class, 'update']);
+    Route::delete('/{contract}', [ContractController::class, 'destroy']);
+    Route::get('/{contract}/download', [ContractController::class, 'download']);
+});
+

@@ -11,9 +11,45 @@ class UMKMController extends Controller
 {
     public function index()
     {
-        $data = UMKM::with('fotoProduk')->get();
-        return response()->json(['data' => $data]);
+       $data = UMKM::with(['user', 'fotoProduk'])
+        ->whereHas('user', function ($query) {
+            $query->where('role', 'umkm');
+        })
+        ->get();
+
+    return response()->json([
+        'message' => 'Data UMKM dari supplier berhasil diambil',
+        'data' => $data
+    ]);
     }
+
+    public function indexSuppliers()
+{
+    $data = UMKM::with(['user', 'fotoProduk'])
+        ->whereHas('user', function ($query) {
+            $query->where('role', 'supplier');
+        })
+        ->get();
+
+    return response()->json([
+        'message' => 'Data UMKM dari supplier berhasil diambil',
+        'data' => $data
+    ]);
+}
+
+    public function indexDistributor()
+{
+    $data = UMKM::with(['user', 'fotoProduk'])
+        ->whereHas('user', function ($query) {
+            $query->where('role', 'distributor');
+        })
+        ->get();
+
+    return response()->json([
+        'message' => 'Data UMKM dari supplier berhasil diambil',
+        'data' => $data
+    ]);
+}
 
     public function store(Request $request)
     {
@@ -101,7 +137,6 @@ class UMKMController extends Controller
 
     public function display(Request $request, $id)
     {
-        $userId = $request->user()->id;
 
         $umkm = UMKM::with([
             'fotoProduk' => function ($query) {

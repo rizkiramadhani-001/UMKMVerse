@@ -5,23 +5,18 @@ import axios from 'axios';
 import {
   MapPin,
   Star,
-  TrendingUp,
-  Users,
-  DollarSign,
   Phone,
   Mail,
   Globe,
   CheckCircle,
   Calendar,
-  Award,
   ArrowLeft,
   Share2,
   Heart,
   MessageSquare,
   Play,
   ChevronLeft,
-  ChevronRight,
-  Shield
+  ChevronRight
 } from 'lucide-react';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
@@ -98,32 +93,13 @@ export default function UMKMDetail() {
           videoPitchUrl: data.videoPitchUrl,
           rating: parseFloat(data.rating) || 4.5,
           reviewCount: parseInt(data.reviewCount) || 8,
-          investorCount: parseInt(data.investorCount) || 12,
-          minInvestment: parseFloat(data.minInvestasi) || 0,
-          targetInvestment: parseFloat(data.targetInvestasi) || 0,
-          currentInvestment: parseFloat(data.currentInvestment || data.investasiTerkumpul) || 0,
-          investmentProgress: data.targetInvestasi && data.currentInvestment
-            ? ((parseFloat(data.currentInvestment) / parseFloat(data.targetInvestasi)) * 100).toFixed(1)
-            : (data.targetInvestasi ? ((parseFloat(data.targetInvestasi) * 0.45) / parseFloat(data.targetInvestasi) * 100).toFixed(1) : 0),
-          roi: parseFloat(data.roi) || 18.5,
           verified: data.verified === 1 || data.verified === true || true,
           established: data.tahunBerdiri || data.created_at,
           visionMision: data.visiMisi,
           targetMarket: data.targetPasar,
           uniqueValue: data.keunggulanProduk,
-          nib: data.nib,
-          financials: {
-            revenue: parseFloat(data.pendapatanBulanan) || 25000000,
-            profit: parseFloat(data.labaBulanan) || 8500000,
-            profitMargin: parseFloat(data.marginKeuntungan) || 34.0,
-            growth: parseFloat(data.pertumbuhan) || 22.5
-          }
+          nib: data.nib
         };
-
-        // Update currentInvestment jika 0
-        if (transformedData.currentInvestment === 0 && transformedData.targetInvestment > 0) {
-          transformedData.currentInvestment = transformedData.targetInvestment * 0.45;
-        }
 
         console.log('Transformed UMKM Data:', transformedData);
         setUmkmData(transformedData);
@@ -156,27 +132,27 @@ export default function UMKMDetail() {
       {
         id: 'rev-001',
         userName: 'Budi Santoso',
-        userRole: 'investor',
+        userRole: 'customer',
         rating: 5,
-        comment: 'Investasi yang sangat menjanjikan! ROI konsisten dan komunikasi dengan owner sangat baik. Saya sudah berinvestasi selama 6 bulan dan hasilnya memuaskan. Highly recommended untuk investor pemula maupun berpengalaman!',
+        comment: 'Produk sangat berkualitas dan pelayanan memuaskan. Pengalaman berbelanja yang sangat menyenangkan. Highly recommended!',
         createdAt: '2025-10-20T10:00:00Z',
         verified: true
       },
       {
         id: 'rev-002',
         userName: 'Siti Nurhaliza',
-        userRole: 'investor',
+        userRole: 'customer',
         rating: 5,
-        comment: 'Produk berkualitas tinggi dengan konsep yang unik. Tim sangat profesional dan transparansi keuangan sangat baik. Dashboard investor mudah dipahami dan update rutin setiap bulan.',
+        comment: 'Produk berkualitas tinggi dengan konsep yang unik. Pelayanan sangat profesional dan ramah. Pasti akan order lagi!',
         createdAt: '2025-10-15T14:30:00Z',
         verified: true
       },
       {
         id: 'rev-003',
         userName: 'Ahmad Wijaya',
-        userRole: 'investor',
+        userRole: 'customer',
         rating: 4,
-        comment: 'UMKM yang solid dengan manajemen yang bagus. Proses investasi mudah dan cepat. Bagi hasil tepat waktu. Saya akan menambah investasi di periode berikutnya.',
+        comment: 'UMKM yang solid dengan produk yang bagus. Proses pemesanan mudah dan cepat. Pengiriman tepat waktu.',
         createdAt: '2025-10-10T09:15:00Z',
         verified: true
       },
@@ -192,18 +168,18 @@ export default function UMKMDetail() {
       {
         id: 'rev-005',
         userName: 'Dewi Kusuma',
-        userRole: 'investor',
+        userRole: 'customer',
         rating: 5,
-        comment: 'Pertama kali investasi di UMKM dan pengalaman sangat positif! Owner responsif dan selalu update perkembangan bisnis. ROI sesuai proyeksi bahkan lebih baik.',
+        comment: 'Pertama kali beli di UMKM ini dan sangat puas! Owner responsif dan produk sesuai ekspektasi bahkan lebih baik.',
         createdAt: '2025-09-28T11:45:00Z',
         verified: true
       },
       {
         id: 'rev-006',
         userName: 'Rudi Hartono',
-        userRole: 'investor',
+        userRole: 'customer',
         rating: 4,
-        comment: 'Investasi yang menguntungkan dengan risiko yang terkelola dengan baik. Dokumentasi lengkap dan legal. Cocok untuk diversifikasi portfolio.',
+        comment: 'Produk berkualitas dengan harga yang wajar. Dokumentasi lengkap dan legal. Cocok untuk kebutuhan bisnis.',
         createdAt: '2025-09-22T08:30:00Z',
         verified: true
       },
@@ -219,9 +195,9 @@ export default function UMKMDetail() {
       {
         id: 'rev-008',
         userName: 'Linda Permata',
-        userRole: 'investor',
+        userRole: 'customer',
         rating: 5,
-        comment: 'Sistem bagi hasil yang transparan dan adil. Saya sangat puas dengan performa investasi ini. Owner sangat welcome untuk diskusi dan sharing tentang perkembangan bisnis.',
+        comment: 'Pelayanan yang excellent dan produk berkualitas. Sangat puas dengan pembelian ini. Owner sangat welcome untuk diskusi tentang produk.',
         createdAt: '2025-09-10T15:20:00Z',
         verified: true
       }
@@ -231,14 +207,6 @@ export default function UMKMDetail() {
   };
 
   // Helper functions
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(value);
-  };
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
       year: 'numeric',
@@ -263,17 +231,6 @@ export default function UMKMDetail() {
     return categories[category] || category;
   };
 
-  const handleInvest = () => {
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    const umkmId = id || searchParams.get('id');
-    
-    if (!token) {
-      navigate('/login', { state: { from: `/umkm/${umkmId}` } });
-    } else {
-      navigate(`/investor-dashboard/contracts`);
-    }
-  };
-
   const handleContact = () => {
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     const umkmId = id || searchParams.get('id');
@@ -281,13 +238,19 @@ export default function UMKMDetail() {
     if (!token) {
       navigate('/login', { state: { from: `/umkm/${umkmId}` } });
     } else {
-        axios.post(`http://127.0.0.1:8000/api/chats`, {
-          other_user_id: userid
-        },{
-          headers:{
-            Authorization: `Bearer ${token}`,
-          }
-        })
+      axios.post(`http://127.0.0.1:8000/api/chats`, {
+        other_user_id: userid
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      }).then(response => {
+        console.log('Chat created:', response.data);
+        // Navigate to chat or show success message
+        navigate('/umkm-dashboard/chat');
+      }).catch(error => {
+        console.error('Error creating chat:', error);
+      });
     }
   };
 
@@ -442,10 +405,6 @@ export default function UMKMDetail() {
                         <span className="text-gray-600 text-sm">({umkmData.reviewCount} reviews)</span>
                       </div>
                     )}
-                    <div className="flex items-center space-x-1 text-gray-600">
-                      <Users size={18} />
-                      <span className="text-sm">{umkmData.investorCount} Investors</span>
-                    </div>
                   </div>
                 </div>
 
@@ -490,8 +449,8 @@ export default function UMKMDetail() {
                 <div className="flex space-x-1 p-2">
                   {[
                     { id: 'overview', label: 'Overview' },
-                    { id: 'financials', label: 'Financial Performance' },
-                    { id: 'reviews', label: `Reviews (${reviews.length})` }
+                    { id: 'reviews', label: `Reviews (${reviews.length})` },
+                    { id: 'products', label: 'Products'}
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -583,46 +542,6 @@ export default function UMKMDetail() {
                   </div>
                 )}
 
-                {/* Financials Tab */}
-                {activeTab === 'financials' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-blue-50 rounded-xl">
-                        <p className="text-sm text-gray-600 mb-1">Monthly Revenue</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {formatCurrency(umkmData.financials.revenue)}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-green-50 rounded-xl">
-                        <p className="text-sm text-gray-600 mb-1">Monthly Profit</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {formatCurrency(umkmData.financials.profit)}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-purple-50 rounded-xl">
-                        <p className="text-sm text-gray-600 mb-1">Profit Margin</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {umkmData.financials.profitMargin.toFixed(1)}%
-                        </p>
-                      </div>
-                      <div className="p-4 bg-orange-50 rounded-xl">
-                        <p className="text-sm text-gray-600 mb-1">YoY Growth</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {umkmData.financials.growth.toFixed(1)}%
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-yellow-50 rounded-xl">
-                      <p className="text-sm text-gray-600 mb-2">💡 Note</p>
-                      <p className="text-sm text-gray-700">
-                        Data keuangan lengkap hanya tersedia untuk investor terdaftar. 
-                        Silakan login atau daftar untuk melihat detail lebih lanjut.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {/* Reviews Tab */}
                 {activeTab === 'reviews' && (
                   <div className="space-y-4">
@@ -671,111 +590,97 @@ export default function UMKMDetail() {
             </div>
           </div>
 
-          {/* Right Column - Investment Card */}
+          {/* Right Column - Contact Card */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 space-y-6">
-              {/* Investment Progress */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">Progress Investasi</span>
-                  <span className="text-sm font-bold text-blue-600">
-                    {umkmData.investmentProgress}%
-                  </span>
+              {/* UMKM Info */}
+              <div className="text-center">
+                {umkmData.logoUrl && (
+                  <img 
+                    src={umkmData.logoUrl} 
+                    alt={umkmData.name}
+                    className="w-24 h-24 mx-auto rounded-full object-cover mb-4 border-4 border-blue-100"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{umkmData.name}</h3>
+                <p className="text-sm text-gray-600">{getCategoryLabel(umkmData.category)}</p>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-blue-50 rounded-xl text-center">
+                  <Star className="mx-auto text-yellow-500 mb-1" size={20} fill="currentColor" />
+                  <p className="text-xs text-gray-600">Rating</p>
+                  <p className="text-lg font-bold text-gray-900">{umkmData.rating.toFixed(1)}</p>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3 mb-4">
-                  <div
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 h-3 rounded-full transition-all"
-                    style={{ width: `${Math.min(parseFloat(umkmData.investmentProgress), 100)}%` }}
-                  ></div>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Terkumpul:</span>
-                  <span className="font-bold text-gray-900">
-                    {formatCurrency(umkmData.currentInvestment)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Target:</span>
-                  <span className="font-bold text-gray-900">
-                    {formatCurrency(umkmData.targetInvestment)}
-                  </span>
+                <div className="p-3 bg-green-50 rounded-xl text-center">
+                  <MessageSquare className="mx-auto text-green-600 mb-1" size={20} />
+                  <p className="text-xs text-gray-600">Reviews</p>
+                  <p className="text-lg font-bold text-gray-900">{umkmData.reviewCount}</p>
                 </div>
               </div>
 
-              {/* Key Metrics */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="text-green-600" size={20} />
-                    <span className="text-sm font-medium text-gray-700">Average ROI</span>
+              {/* CTA Button */}
+              <button
+                onClick={handleContact}
+                className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:scale-105 transition transform"
+              >
+                Hubungi Supplier
+              </button>
+
+              {/* Contact Info */}
+              <div className="pt-4 border-t border-gray-200 space-y-3">
+                <h4 className="font-semibold text-gray-900 mb-3">Informasi Kontak</h4>
+                {umkmData.phone && (
+                  <div className="flex items-center space-x-3 text-sm text-gray-700">
+                    <Phone size={16} className="text-gray-400" />
+                    <span>{umkmData.phone}</span>
                   </div>
-                  <span className="text-lg font-bold text-green-600">{umkmData.roi}%</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
-                  <div className="flex items-center space-x-2">
-                    <Users className="text-blue-600" size={20} />
-                    <span className="text-sm font-medium text-gray-700">Total Investors</span>
+                )}
+                {umkmData.email && (
+                  <div className="flex items-center space-x-3 text-sm text-gray-700">
+                    <Mail size={16} className="text-gray-400" />
+                    <span className="break-all">{umkmData.email}</span>
                   </div>
-                  <span className="text-lg font-bold text-blue-600">{umkmData.investorCount}</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl">
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="text-purple-600" size={20} />
-                    <span className="text-sm font-medium text-gray-700">Min. Investment</span>
+                )}
+                {umkmData.website && (
+                  <div className="flex items-center space-x-3 text-sm">
+                    <Globe size={16} className="text-gray-400" />
+                    <a 
+                      href={umkmData.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline break-all"
+                    >
+                      Kunjungi Website
+                    </a>
                   </div>
-                  <span className="text-lg font-bold text-purple-600">
-                    {formatCurrency(umkmData.minInvestment)}
-                  </span>
-                </div>
-              </div>
-
-              {/* CTA Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={handleInvest}
-                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:scale-105 transition transform"
-                >
-                  Investasi Sekarang
-                </button>
-
-                <button
-                  onClick={handleContact}
-                  className="w-full py-3 border-2 border-blue-600 text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition"
-                >
-                  Hubungi UMKM
-                </button>
+                )}
               </div>
 
               {/* Info Box */}
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-gray-700">
                 <p className="font-semibold mb-2">💡 Informasi</p>
                 <ul className="space-y-1 text-xs">
-                  <li>• Semua investasi dijamin dengan e-contract legal</li>
-                  <li>• Sistem bagi hasil transparan dengan smart contract</li>
-                  <li>• Tracking ROI real-time di dashboard</li>
-                  <li>• Withdrawal kapan saja sesuai kesepakatan</li>
+                  <li>• Hubungi langsung untuk informasi produk</li>
+                  <li>• Konsultasi gratis tentang layanan</li>
+                  <li>• Response time dalam 24 jam</li>
+                  <li>• Tanya jawab seputar UMKM</li>
                 </ul>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-around text-center">
-                  <div>
-                    <CheckCircle className="mx-auto text-green-600 mb-1" size={24} />
-                    <p className="text-xs font-semibold text-gray-900">Verified</p>
-                  </div>
-                  <div>
-                    <Award className="mx-auto text-yellow-600 mb-1" size={24} />
-                    <p className="text-xs font-semibold text-gray-900">Top Rated</p>
-                  </div>
-                  <div>
-                    <Shield className="mx-auto text-blue-600 mb-1" size={24} />
-                    <p className="text-xs font-semibold text-gray-900">Secure</p>
+              {/* Verified Badge */}
+              {umkmData.verified && (
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-center space-x-2 text-green-600">
+                    <CheckCircle size={20} />
+                    <span className="text-sm font-semibold">UMKM Terverifikasi</span>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

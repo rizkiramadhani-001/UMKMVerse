@@ -6,8 +6,6 @@ import {
   Search,
   MapPin,
   Star,
-  TrendingUp,
-  Users,
   X,
   ChevronRight,
   ChevronLeft,
@@ -29,11 +27,8 @@ export default function BrowseUMKM() {
   const itemsPerPage = 9;
 
   const [filters, setFilters] = useState({
-    minInvestment: '',
-    maxInvestment: '',
     location: '',
-    minRating: 0,
-    investmentProgress: 'all'
+    minRating: 0
   });
 
   const categories = [
@@ -45,41 +40,35 @@ export default function BrowseUMKM() {
 
   // === Fetch Data dari API ===
   useEffect(() => {
-const fetchUMKM = async () => {
-  try {
-    setLoading(true);
-    const res = await axios.get('http://127.0.0.1:8000/api/umkm');
+    const fetchUMKM = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get('http://127.0.0.1:8000/api/umkm/distributor');
 
-    // Pastikan response adalah array
-    const umkmArray = Array.isArray(res.data) ? res.data : res.data.data || [];
+        // Pastikan response adalah array
+        const umkmArray = Array.isArray(res.data) ? res.data : res.data.data || [];
 
-    const formatted = umkmArray.map((item) => ({
-      id: item.id,
-      name: item.namaUmkm,
-      category: item.bidangUsaha || 'other',
-      description: item.deskripsiSingkat,
-      location: item.lokasiUsaha,
-      rating: 4.8,
-      reviewCount: 0,
-      image: item.foto_produk?.length
-        ? `http://127.0.0.1:8000/storage/${item.foto_produk[0].path}`
-        : `https://placehold.co/400x300?text=${encodeURIComponent(item.namaUmkm)}`,
-      invested: Math.floor(Math.random() * 100),
-      minInvest: item.minInvestasi || 0,
-      targetInvest: item.targetInvestasi || 0,
-      roi: 15 + Math.random().toFixed(1),
-      investorCount: Math.floor(Math.random() * 50),
-      verified: true
-    }));
+        const formatted = umkmArray.map((item) => ({
+          id: item.id,
+          name: item.namaUmkm,
+          category: item.bidangUsaha || 'other',
+          description: item.deskripsiSingkat,
+          location: item.lokasiUsaha,
+          rating: 4.8,
+          reviewCount: 0,
+          image: item.foto_produk?.length
+            ? `http://127.0.0.1:8000/storage/${item.foto_produk[0].path}`
+            : `https://placehold.co/400x300?text=${encodeURIComponent(item.namaUmkm)}`,
+          verified: true
+        }));
 
-    setAllUMKM(formatted);
-  } catch (error) {
-    console.error('Error fetching UMKM:', error);
-  } finally {
-    setLoading(false);
-  }
-};
-
+        setAllUMKM(formatted);
+      } catch (error) {
+        console.error('Error fetching UMKM:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchUMKM();
   }, []);
@@ -95,11 +84,7 @@ const fetchUMKM = async () => {
       return false;
     if (filters.location && !umkm.location.toLowerCase().includes(filters.location.toLowerCase()))
       return false;
-    if (filters.minInvestment && umkm.minInvest < parseInt(filters.minInvestment)) return false;
-    if (filters.maxInvestment && umkm.minInvest > parseInt(filters.maxInvestment)) return false;
     if (filters.minRating && umkm.rating < filters.minRating) return false;
-    if (filters.investmentProgress === 'below50' && umkm.invested >= 50) return false;
-    if (filters.investmentProgress === 'above50' && umkm.invested < 50) return false;
     return true;
   });
 
@@ -108,13 +93,13 @@ const fetchUMKM = async () => {
     switch (sortBy) {
       case 'newest':
         return b.id - a.id;
-      case 'roi':
-        return b.roi - a.roi;
-      case 'investment':
-        return a.minInvest - b.minInvest;
+      case 'rating':
+        return b.rating - a.rating;
+      case 'name':
+        return a.name.localeCompare(b.name);
       case 'popular':
       default:
-        return b.investorCount - a.investorCount;
+        return b.rating - a.rating;
     }
   });
 
@@ -123,26 +108,16 @@ const fetchUMKM = async () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedUMKM = sortedUMKM.slice(startIndex, startIndex + itemsPerPage);
 
-  const formatCurrency = (value) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(value);
-
   const resetFilters = () => {
     setFilters({
-      minInvestment: '',
-      maxInvestment: '',
       location: '',
-      minRating: 0,
-      investmentProgress: 'all'
+      minRating: 0
     });
     setSearchQuery('');
     setSelectedCategory('all');
   };
 
-  const handleCardClick = (umkmId) => navigate(`/umkm/${umkmId}`);
+  const handleCardClick = (umkmId) => navigate(`/umkm-dashboard/umkm/${umkmId}`);
 
   // === Render ===
   if (loading) {
@@ -162,7 +137,7 @@ const fetchUMKM = async () => {
             🔍 Explore UMKM Potensial
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-            Temukan UMKM Terbaik untuk Investasi
+            Temukan Distributor Terbaik
           </h1>
           <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto">
             Jelajahi {allUMKM.length}+ UMKM terverifikasi di berbagai kategori bisnis
@@ -197,12 +172,12 @@ const fetchUMKM = async () => {
               <div className="text-sm text-gray-600">UMKM Terdaftar</div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-md">
-              <div className="text-3xl font-bold text-green-600">Rp 2.5M+</div>
-              <div className="text-sm text-gray-600">Dana Terkumpul</div>
+              <div className="text-3xl font-bold text-green-600">4.8</div>
+              <div className="text-sm text-gray-600">Avg Rating</div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-md">
-              <div className="text-3xl font-bold text-purple-600">18.5%</div>
-              <div className="text-sm text-gray-600">Avg ROI</div>
+              <div className="text-3xl font-bold text-purple-600">100%</div>
+              <div className="text-sm text-gray-600">Verified</div>
             </div>
           </div>
         </div>
@@ -226,10 +201,6 @@ const fetchUMKM = async () => {
               >
                 <span className="text-xl">{cat.icon}</span>
                 <span>{cat.name}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${selectedCategory === cat.id ? 'bg-white/20' : 'bg-gray-100'
-                  }`}>
-                  {cat.count}
-                </span>
               </button>
             ))}
           </div>
@@ -248,14 +219,14 @@ const fetchUMKM = async () => {
                 >
                   <SlidersHorizontal size={20} />
                   <span>Filter</span>
-                  {Object.values(filters).some(v => v && v !== 'all' && v !== 0) && (
+                  {Object.values(filters).some(v => v && v !== 0) && (
                     <span className="px-2 py-0.5 bg-blue-600 text-white rounded-full text-xs">
-                      {Object.values(filters).filter(v => v && v !== 'all' && v !== 0).length}
+                      {Object.values(filters).filter(v => v && v !== 0).length}
                     </span>
                   )}
                 </button>
 
-                {Object.values(filters).some(v => v && v !== 'all' && v !== 0) && (
+                {Object.values(filters).some(v => v && v !== 0) && (
                   <button
                     onClick={resetFilters}
                     className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
@@ -274,8 +245,8 @@ const fetchUMKM = async () => {
                 >
                   <option value="popular">Paling Populer</option>
                   <option value="newest">Terbaru</option>
-                  <option value="roi">ROI Tertinggi</option>
-                  <option value="investment">Min. Investasi</option>
+                  <option value="rating">Rating Tertinggi</option>
+                  <option value="name">Nama (A-Z)</option>
                 </select>
 
                 <div className="text-sm text-gray-600">
@@ -286,27 +257,7 @@ const fetchUMKM = async () => {
 
             {/* Advanced Filters */}
             {showFilters && (
-              <div className="mt-4 pt-4 border-t border-gray-200 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Min. Investasi (Rp)</label>
-                  <input
-                    type="number"
-                    value={filters.minInvestment}
-                    onChange={(e) => setFilters({ ...filters, minInvestment: e.target.value })}
-                    placeholder="0"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Max. Investasi (Rp)</label>
-                  <input
-                    type="number"
-                    value={filters.maxInvestment}
-                    onChange={(e) => setFilters({ ...filters, maxInvestment: e.target.value })}
-                    placeholder="Unlimited"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              <div className="mt-4 pt-4 border-t border-gray-200 grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Lokasi</label>
                   <input
@@ -318,15 +269,16 @@ const fetchUMKM = async () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Progress Investasi</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Minimum Rating</label>
                   <select
-                    value={filters.investmentProgress}
-                    onChange={(e) => setFilters({ ...filters, investmentProgress: e.target.value })}
+                    value={filters.minRating}
+                    onChange={(e) => setFilters({ ...filters, minRating: parseFloat(e.target.value) })}
                     className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="all">Semua</option>
-                    <option value="below50">Di bawah 50%</option>
-                    <option value="above50">Di atas 50%</option>
+                    <option value={0}>Semua Rating</option>
+                    <option value={4}>4+ ⭐</option>
+                    <option value={4.5}>4.5+ ⭐</option>
+                    <option value={4.8}>4.8+ ⭐</option>
                   </select>
                 </div>
               </div>
@@ -373,9 +325,6 @@ const fetchUMKM = async () => {
                             <span>Verified</span>
                           </span>
                         )}
-                        <span className="px-3 py-1 bg-white text-blue-600 rounded-full text-sm font-semibold">
-                          {umkm.invested}% Terpenuhi
-                        </span>
                       </div>
                     </div>
 
@@ -400,45 +349,9 @@ const fetchUMKM = async () => {
                         </div>
                       </div>
 
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-blue-50 p-3 rounded-xl">
-                          <div className="flex items-center space-x-2 text-blue-600 mb-1">
-                            <TrendingUp size={16} />
-                            <span className="text-xs font-medium">ROI</span>
-                          </div>
-                          <div className="text-lg font-bold text-gray-900">{umkm.roi}%</div>
-                        </div>
-                        <div className="bg-green-50 p-3 rounded-xl">
-                          <div className="flex items-center space-x-2 text-green-600 mb-1">
-                            <Users size={16} />
-                            <span className="text-xs font-medium">Investor</span>
-                          </div>
-                          <div className="text-lg font-bold text-gray-900">{umkm.investorCount}</div>
-                        </div>
-                      </div>
-
-                      {/* Investment Progress Bar */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-                          <span>Progress Investasi</span>
-                          <span className="font-semibold">{umkm.invested}%</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-blue-600 to-blue-700 h-2 rounded-full transition-all"
-                            style={{ width: `${umkm.invested}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
                       {/* Footer */}
                       <div className="border-t pt-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-gray-500">Min. Investasi</p>
-                            <p className="text-lg font-bold text-gray-900">{formatCurrency(umkm.minInvest)}</p>
-                          </div>
+                        <div className="flex items-center justify-end">
                           <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center space-x-1 group-hover:scale-105 transform">
                             <span>Lihat Detail</span>
                             <ChevronRight size={16} />
@@ -501,7 +414,7 @@ const fetchUMKM = async () => {
             Punya UMKM?
           </h2>
           <p className="text-blue-100 mb-8 text-lg">
-            Daftarkan UMKM Anda dan dapatkan akses ke ribuan investor potensial
+            Daftarkan UMKM Anda dan promosikan bisnis Anda kepada ribuan pengunjung
           </p>
           <button
             onClick={() => navigate('/register')}

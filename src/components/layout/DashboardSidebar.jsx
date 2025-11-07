@@ -25,9 +25,9 @@ export default function DashboardSidebar({ role }) {
       { path: '/umkm-dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
       { path: '/umkm-dashboard/profile', icon: <Building2 size={20} />, label: 'Profil UMKM' },
       { path: '/umkm-dashboard/finance', icon: <TrendingUp size={20} />, label: 'Keuangan' },
-      { path: '/umkm-dashboard/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
       { path: '/umkm-dashboard/contracts', icon: <FileText size={20} />, label: 'Kontrak' },
-      { path: '/umkm-dashboard/orders', icon: <ShoppingCart size={20} />, label: 'Pesanan' },
+      { path: '/umkm-dashboard/browse', icon: <Building2 size={20} />, label: 'Browse Supplier' },
+      // { path: '/umkm-dashboard/orders', icon: <ShoppingCart size={20} />, label: 'Pesanan' },
       { path: '/umkm-dashboard/chat', icon: <MessageSquare size={20} />, label: 'Chat' },
       { path: '/umkm-dashboard/settings', icon: <Settings size={20} />, label: 'Pengaturan' }
     ],
@@ -43,11 +43,16 @@ export default function DashboardSidebar({ role }) {
     ],
     supplier: [
       { path: '/supplier-dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+      { path: '/supplier-dashboard/profile', icon: <Building2 size={20} />, label: 'Profile' },
+      { path: '/supplier-dashboard/browse', icon: <Building2 size={20} />, label: 'Browse Distributor' },
+
       { path: '/supplier-dashboard/orders', icon: <ShoppingCart size={20} />, label: 'Pesanan' },
       { path: '/supplier-dashboard/products', icon: <Package size={20} />, label: 'Produk' },
       { path: '/supplier-dashboard/contracts', icon: <FileText size={20} />, label: 'Kontrak' },
       { path: '/supplier-dashboard/chat', icon: <MessageSquare size={20} />, label: 'Chat' },
-      { path: '/supplier-dashboard/settings', icon: <Settings size={20} />, label: 'Pengaturan' }
+      { path: '/supplier-dashboard/settings', icon: <Settings size={20} />, label: 'Pengaturan' },
+      
+
     ],
     distributor: [
       { path: '/distributor-dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },

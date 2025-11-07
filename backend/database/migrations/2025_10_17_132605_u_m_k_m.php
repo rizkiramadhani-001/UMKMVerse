@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('namaUmkm')->nullable();
             $table->string('nib')->nullable();
             $table->string('bidangUsaha')->nullable();
-            $table->string('email')->nullable();
+            $table->string('email')->nullable()->unique('email');
             $table->string('phone')->nullable();
             $table->string('website')->nullable();
             $table->string('lokasiUsaha')->nullable();

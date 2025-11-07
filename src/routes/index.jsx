@@ -45,6 +45,8 @@ import UMKMFinance from '../pages/umkm/Finance';
 import UMKMAnalytics from '../pages/umkm/Analytics';
 import UMKMContracts from '../pages/umkm/Contracts';
 import UMKMOrders from '../pages/umkm/Orders';
+import UMKMBrowse from '../pages/umkm/Browse';
+import UMKMDetailSupplier from '../pages/umkm/UMKMDetail'
 import UMKMChat from '../pages/umkm/Chat';
 import UMKMSettings from '../pages/umkm/Settings';
 
@@ -72,7 +74,10 @@ import SupplierProducts from '../pages/supplier/Products';
 import ProductForm from '../pages/supplier/ProductForm'; 
 import SupplierContracts from '../pages/supplier/Contracts';
 import SupplierChat from '../pages/supplier/Chat';
+import SupplierProfile from '../pages/supplier/Profile'
 import SupplierForum from '../pages/supplier/Forum';
+import SuplierBrowse from '../pages/supplier/Browse';
+import SupplierDetail from '../pages/supplier/UMKMDetail.'
 import SupplierSettings from '../pages/supplier/Settings';
 
 // ========================================
@@ -198,12 +203,16 @@ const router = createBrowserRouter([
         element: <UMKMAnalytics />
       },
       {
+        path: 'umkm/:id',
+        element: <UMKMDetailSupplier />
+      },
+      {
         path: 'contracts',
         element: <UMKMContracts />
       },
       {
-        path: 'orders',
-        element: <UMKMOrders />
+        path: 'browse',
+        element: <UMKMBrowse />
       },
       {
         path: 'chat',
@@ -246,6 +255,10 @@ const router = createBrowserRouter([
       },
       {
         path: 'umkm/:id',
+        element: <UMKMDetail />
+      },
+      {
+        path: 'umkm/:id',
         element: <InvestorUMKMDetail />
       },
       {
@@ -274,7 +287,21 @@ const router = createBrowserRouter([
         index: true,
         element: <SupplierDashboard />
       },
+
+      {
+        path: 'browse',
+        element:  <SuplierBrowse />
+      },
+      {
+        path: 'umkm/:id',
+        element:  <UMKMDetailSupplier />
+      },
+      
       // TODO: Uncomment ketika pages sudah dibuat
+      {
+        path: 'profile',
+        element: <SupplierProfile />
+      },
       {
         path: 'orders',
         element: <SupplierOrders />
