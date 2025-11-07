@@ -17,138 +17,271 @@ import {
   User,
   TrendingUp,
   Package,
-  Truck
+  Truck,
+  Bot,
+  Sparkles
 } from 'lucide-react';
+import axios from 'axios';
+const POLLING_INTERVAL = 2000; // 2 seconds
+const GEMINI_API_KEY = 'AIzaSyC0fWjhAyAAONFAltYoiWdVekNRKe2A9K8'; // Replace with your actual Gemini API key
+const AI_CHATBOT_ID = 'ai-assistant-001';
+
 
 export default function UMKMChat() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedContact, setSelectedContact] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [messageInput, setMessageInput] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all'); // all, investor, supplier, distributor
+  const [selectedFilter, setSelectedFilter] = useState('all'); // all, investor, supplier, distributor, ai
   const messagesEndRef = useRef(null);
+  const intervalRef = useRef(null);
+  const [aiMessages, setAiMessages] = useState([]); // Store AI chatbot messages separately
+  const [isAiTyping, setIsAiTyping] = useState(false);
+
 
   // ========================================
   // 🔵 BACKEND INTEGRATION POINT #1: STATE MANAGEMENT
   // ========================================
   const [contacts, setContacts] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [currentUser, setCurrentUser] = useState({
-    id: 'umkm-123',
-    name: 'Warung Kopi Nusantara',
-    role: 'umkm'
-  });
+  const [currentUser, setCurrentUser] = useState({});
+
+  // ========================================
+  // 🤖 AI CHATBOT: Initialize AI Assistant Contact
+  // ========================================
+  const AI_ASSISTANT_CONTACT = {
+    id: AI_CHATBOT_ID,
+    chat_id: AI_CHATBOT_ID,
+    name: 'AI Assistant',
+    role: 'ai',
+    avatar: null,
+    lastMessage: 'Halo! Saya siap membantu Anda 24/7 🤖',
+    lastMessageTime: new Date().toISOString(),
+    unreadCount: 0,
+    isOnline: true,
+    lastSeen: new Date().toISOString(),
+  };
+
+  // ========================================
+  // 🤖 AI CHATBOT: Send Message to Gemini API
+  // ========================================
+  const sendMessageToGemini = async (userMessage) => {
+    setIsAiTyping(true);
+    
+    try {
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: `You are a helpful AI assistant for UMKM (Usaha Mikro Kecil Menengah) business owners in Indonesia. 
+                  Help them with business advice, financial planning, marketing strategies, and general business questions.
+                  Always respond in Bahasa Indonesia in a friendly and professional manner.
+                  
+                  User question: ${userMessage}`
+                }
+              ]
+            }
+          ]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      const aiResponse = response.data.candidates[0].content.parts[0].text;
+      
+      // Create AI message object
+      const aiMessage = {
+        id: `ai-${Date.now()}`,
+        senderId: AI_CHATBOT_ID,
+        senderName: 'AI Assistant',
+        message: aiResponse,
+        messageType: 'text',
+        fileUrl: null,
+        fileName: null,
+        sentAt: new Date().toISOString(),
+        status: 'read',
+        isOwn: false
+      };
+
+      setAiMessages(prev => [...prev, aiMessage]);
+      setIsAiTyping(false);
+
+      return aiMessage;
+
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      setIsAiTyping(false);
+      
+      // Fallback error message
+      const errorMessage = {
+        id: `ai-error-${Date.now()}`,
+        senderId: AI_CHATBOT_ID,
+        senderName: 'AI Assistant',
+        message: 'Maaf, saya mengalami kesulitan untuk merespon. Silakan coba lagi nanti.',
+        messageType: 'text',
+        fileUrl: null,
+        fileName: null,
+        sentAt: new Date().toISOString(),
+        status: 'read',
+        isOwn: false
+      };
+
+      setAiMessages(prev => [...prev, errorMessage]);
+      return errorMessage;
+    }
+  };
 
   // ========================================
   // 🔵 BACKEND INTEGRATION POINT #2: FETCH CONTACTS/CONVERSATIONS
   // ========================================
   useEffect(() => {
-    fetchContacts();
+    fetchIsMe();
   }, []);
+
+  useEffect(()=>{
+    if (currentUser.id){
+      fetchData();
+      fetchContacts();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!selectedContact) return;
+
+    // If AI chatbot is selected, load AI messages
+    if (selectedContact.id === AI_CHATBOT_ID) {
+      setMessages(aiMessages);
+      return;
+    }
+
+    // Fetch immediately for regular contacts
+    fetchMessagesData(selectedContact.id);
+
+    // Clear previous interval if any
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    // Start polling
+    intervalRef.current = setInterval(() => {
+      fetchMessagesData(selectedContact.id);
+    }, POLLING_INTERVAL);
+
+    // Cleanup when contact changes or component unmounts
+    return () => clearInterval(intervalRef.current);
+  }, [selectedContact, aiMessages]);
+
+  const fetchData = async () => {
+    try {
+      const token = sessionStorage.getItem('token');
+
+      const response = await axios.get('http://127.0.0.1:8000/api/chats', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("Chat data:", response.data);
+
+      const contacts = response.data.map((item) => {
+        // Check if the current user is user_one
+        const isUserOne = item.user_one.id === currentUser.id;
+        console.log("Is User One:", isUserOne);
+        // Select the other participant as receiver
+        const receiver = isUserOne ? item.user_two : item.user_one;
+        console.log("Receiver:", receiver);
+        if (isUserOne)
+        {
+          console.log("User One is current user");
+        }
+
+        return {
+          id: item.id,
+          chat_id: item.chat_id,
+          name: receiver?.name || "Unknown",
+          role: receiver?.role || "",
+          avatar: receiver?.avatar || null,
+          lastMessage: item.last_message?.message || "Belum ada pesan",
+          lastMessageTime: item.last_message?.created_at || item.updated_at,
+          unreadCount: item.unread_count || 0,
+          isOnline: receiver?.is_online || false,
+          lastSeen: receiver?.last_seen || null,
+        };
+      });
+
+      console.log("Contacts:", contacts);
+      
+      // Add AI Assistant as first contact
+      setContacts([AI_ASSISTANT_CONTACT, ...contacts]);
+
+    } catch (error) {
+      console.error("Error fetching chat data:", error);
+      // Even if error, still add AI Assistant
+      setContacts([AI_ASSISTANT_CONTACT]);
+    }
+  };
+
+
+  const fetchIsMe = async () => {
+    axios.get(`http://127.0.0.1:8000/api/getMe`, {
+      headers: {
+        Authorization: `Bearer ` + sessionStorage.getItem('token'),
+      },
+    }).then((response) => {
+      console.log("Current user data:", response.data);
+      const isme = {
+        id: response.data.id,
+        name: response.data.name,
+        role: response.data.role
+      }
+      setCurrentUser(isme);
+    }).catch((error) => {
+      console.error("Error fetching current user:", error);
+    });
+  }
+
+
+  const fetchMessagesData = async (id) => {
+    axios.get(`http://127.0.0.1:8000/api/chats/${id}/messages`, {
+      headers: {
+        Authorization: `Bearer ` + sessionStorage.getItem('token'),
+      },
+    }).then((response) => {
+      console.log("Chat messages data:", response.data);
+      const dummyMessages = response.data.map((item) => {
+        const isOwn = item.sender_id === currentUser.id;
+
+        return {
+          id: item.id,
+          senderId: item.sender_id,
+          senderName: item.sender?.name || "Unknown",
+          message: item.message,
+          messageType: "text",
+          fileUrl: null,
+          fileName: null,
+          sentAt: item.created_at || "2024-07-30T13:00:00Z",
+          status: item.read_at ? "read" : "sent",
+          isOwn: isOwn,
+        };
+      });
+      setMessages(dummyMessages);
+    }).catch((error) => {
+      console.error("Error fetching chat messages data:", error);
+    });
+  }
 
   const fetchContacts = async () => {
     setIsLoading(true);
-    
+
     try {
-      // TODO: BACKEND - Ganti dengan actual API call
-      // const response = await fetch('/api/umkm/chat/contacts', {
-      //   method: 'GET',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // const data = await response.json();
-
-      // EXPECTED RESPONSE FORMAT dari backend:
-      // {
-      //   success: true,
-      //   data: {
-      //     contacts: [
-      //       {
-      //         id: "user-123",
-      //         name: "John Doe",
-      //         role: "investor", // investor, supplier, distributor
-      //         avatar: "https://api.umkmverse.com/avatars/xxx.jpg",
-      //         lastMessage: "Terima kasih infonya!",
-      //         lastMessageTime: "2024-07-30T14:30:00Z",
-      //         unreadCount: 3,
-      //         isOnline: true,
-      //         lastSeen: "2024-07-30T14:30:00Z"
-      //       }
-      //     ]
-      //   }
-      // }
-
-      // DUMMY DATA - Hapus setelah integrasi backend
+      // Simulate loading
       setTimeout(() => {
-        const dummyContacts = [
-          {
-            id: 'inv-001',
-            name: 'John Doe',
-            role: 'investor',
-            avatar: null,
-            lastMessage: 'Terima kasih untuk laporan keuangan bulan ini. Sangat detail!',
-            lastMessageTime: '2024-07-30T14:30:00Z',
-            unreadCount: 3,
-            isOnline: true,
-            lastSeen: '2024-07-30T14:30:00Z'
-          },
-          {
-            id: 'sup-001',
-            name: 'CV Supplier Bahan Baku',
-            role: 'supplier',
-            avatar: null,
-            lastMessage: 'Stok biji kopi Arabica sudah ready 500kg',
-            lastMessageTime: '2024-07-30T12:15:00Z',
-            unreadCount: 0,
-            isOnline: false,
-            lastSeen: '2024-07-30T12:20:00Z'
-          },
-          {
-            id: 'dis-001',
-            name: 'PT Distribusi Express',
-            role: 'distributor',
-            avatar: null,
-            lastMessage: 'Pengiriman ke Surabaya besok pagi jam 8',
-            lastMessageTime: '2024-07-30T10:45:00Z',
-            unreadCount: 1,
-            isOnline: true,
-            lastSeen: '2024-07-30T14:35:00Z'
-          },
-          {
-            id: 'inv-002',
-            name: 'Jane Smith',
-            role: 'investor',
-            avatar: null,
-            lastMessage: 'Bagaimana progress ekspansi ke Bandung?',
-            lastMessageTime: '2024-07-29T16:20:00Z',
-            unreadCount: 0,
-            isOnline: false,
-            lastSeen: '2024-07-29T18:00:00Z'
-          },
-          {
-            id: 'sup-002',
-            name: 'Toko Kemasan Jaya',
-            role: 'supplier',
-            avatar: null,
-            lastMessage: 'Ok siap, saya kirim sample desain kemasannya',
-            lastMessageTime: '2024-07-28T14:00:00Z',
-            unreadCount: 0,
-            isOnline: false,
-            lastSeen: '2024-07-28T15:30:00Z'
-          }
-        ];
-
-        setContacts(dummyContacts);
         setIsLoading(false);
       }, 1000);
-
-      // ACTUAL IMPLEMENTATION - Uncomment setelah backend ready
-      // if (data.success) {
-      //   setContacts(data.data.contacts);
-      // }
-      // setIsLoading(false);
 
     } catch (error) {
       console.error('Error fetching contacts:', error);
@@ -158,129 +291,7 @@ export default function UMKMChat() {
   };
 
   // ========================================
-  // 🔵 BACKEND INTEGRATION POINT #3: FETCH MESSAGES WITH SPECIFIC CONTACT
-  // ========================================
-  const fetchMessages = async (contactId) => {
-    try {
-      // TODO: BACKEND - Ganti dengan actual API call
-      // const response = await fetch(`/api/umkm/chat/messages/${contactId}`, {
-      //   method: 'GET',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // const data = await response.json();
-
-      // EXPECTED RESPONSE FORMAT dari backend:
-      // {
-      //   success: true,
-      //   data: {
-      //     messages: [
-      //       {
-      //         id: "msg-001",
-      //         senderId: "inv-001",
-      //         senderName: "John Doe",
-      //         receiverId: "umkm-123",
-      //         message: "Halo, saya tertarik dengan laporan ROI terbaru",
-      //         messageType: "text", // text, image, file
-      //         fileUrl: null,
-      //         fileName: null,
-      //         sentAt: "2024-07-30T14:00:00Z",
-      //         status: "read", // sent, delivered, read
-      //         isOwn: false // true jika pesan dari current user
-      //       }
-      //     ]
-      //   }
-      // }
-
-      // DUMMY DATA - Hapus setelah integrasi backend
-      const dummyMessages = [
-        {
-          id: 'msg-001',
-          senderId: contactId,
-          senderName: contacts.find(c => c.id === contactId)?.name,
-          receiverId: currentUser.id,
-          message: 'Halo! Saya tertarik dengan laporan keuangan terbaru. Bisa dikirimkan?',
-          messageType: 'text',
-          fileUrl: null,
-          fileName: null,
-          sentAt: '2024-07-30T13:00:00Z',
-          status: 'read',
-          isOwn: false
-        },
-        {
-          id: 'msg-002',
-          senderId: currentUser.id,
-          senderName: currentUser.name,
-          receiverId: contactId,
-          message: 'Tentu! Saya akan kirimkan segera.',
-          messageType: 'text',
-          fileUrl: null,
-          fileName: null,
-          sentAt: '2024-07-30T13:05:00Z',
-          status: 'read',
-          isOwn: true
-        },
-        {
-          id: 'msg-003',
-          senderId: currentUser.id,
-          senderName: currentUser.name,
-          receiverId: contactId,
-          message: 'Ini laporan keuangan bulan Juli 2024',
-          messageType: 'file',
-          fileUrl: '#',
-          fileName: 'Laporan_Keuangan_Juli_2024.pdf',
-          sentAt: '2024-07-30T13:10:00Z',
-          status: 'read',
-          isOwn: true
-        },
-        {
-          id: 'msg-004',
-          senderId: contactId,
-          senderName: contacts.find(c => c.id === contactId)?.name,
-          receiverId: currentUser.id,
-          message: 'Terima kasih! Saya akan review terlebih dahulu.',
-          messageType: 'text',
-          fileUrl: null,
-          fileName: null,
-          sentAt: '2024-07-30T13:15:00Z',
-          status: 'read',
-          isOwn: false
-        },
-        {
-          id: 'msg-005',
-          senderId: contactId,
-          senderName: contacts.find(c => c.id === contactId)?.name,
-          receiverId: currentUser.id,
-          message: 'Terima kasih untuk laporan keuangan bulan ini. Sangat detail!',
-          messageType: 'text',
-          fileUrl: null,
-          fileName: null,
-          sentAt: '2024-07-30T14:30:00Z',
-          status: 'read',
-          isOwn: false
-        }
-      ];
-
-      setMessages(dummyMessages);
-
-      // ACTUAL IMPLEMENTATION - Uncomment setelah backend ready
-      // if (data.success) {
-      //   setMessages(data.data.messages);
-      // }
-
-      // Mark messages as read
-      await markMessagesAsRead(contactId);
-
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      alert('Gagal memuat pesan');
-    }
-  };
-
-  // ========================================
-  // 🔵 BACKEND INTEGRATION POINT #4: SEND MESSAGE
+  // 🔵 BACKEND INTEGRATION POINT #4: SEND MESSAGE (Modified for AI)
   // ========================================
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedContact) return;
@@ -289,7 +300,7 @@ export default function UMKMChat() {
       id: `temp-${Date.now()}`,
       senderId: currentUser.id,
       senderName: currentUser.name,
-      receiverId: selectedContact.id,
+      chat_id: selectedContact.id,
       message: messageInput,
       messageType: 'text',
       fileUrl: null,
@@ -301,53 +312,33 @@ export default function UMKMChat() {
 
     // Optimistic update
     setMessages(prev => [...prev, tempMessage]);
+    const currentMessage = messageInput;
     setMessageInput('');
 
+    // ========================================
+    // 🤖 AI CHATBOT: Handle AI Assistant messages
+    // ========================================
+    if (selectedContact.id === AI_CHATBOT_ID) {
+      // Add user message to AI messages
+      setAiMessages(prev => [...prev, tempMessage]);
+      
+      // Get AI response
+      await sendMessageToGemini(currentMessage);
+      return;
+    }
+
+    // ========================================
+    // Regular backend message sending
+    // ========================================
+    const formData = new FormData();
+    formData.append('message', currentMessage);
+
     try {
-      // TODO: BACKEND - Ganti dengan actual API call
-      // const response = await fetch('/api/umkm/chat/send', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({
-      //     receiverId: selectedContact.id,
-      //     message: messageInput,
-      //     messageType: 'text',
-      //     sentAt: new Date().toISOString()
-      //   })
-      // });
-      // const data = await response.json();
-
-      // EXPECTED REQUEST BODY:
-      // {
-      //   receiverId: "inv-001",
-      //   message: "Halo, ini pesannya",
-      //   messageType: "text", // text, image, file
-      //   fileUrl: null, // jika messageType = file/image
-      //   fileName: null, // jika messageType = file
-      //   sentAt: "2024-07-30T15:00:00Z"
-      // }
-
-      // EXPECTED RESPONSE:
-      // {
-      //   success: true,
-      //   message: "Pesan berhasil dikirim",
-      //   data: {
-      //     id: "msg-123",
-      //     ... message data ...
-      //     status: "sent"
-      //   }
-      // }
-
-      // ACTUAL IMPLEMENTATION - Uncomment setelah backend ready
-      // if (data.success) {
-      //   // Update tempMessage dengan data dari server
-      //   setMessages(prev => 
-      //     prev.map(msg => msg.id === tempMessage.id ? data.data : msg)
-      //   );
-      // }
+      axios.post(`http://127.0.0.1:8000/api/chats/${selectedContact.id}/messages`, formData, {
+        headers: {
+          Authorization: `Bearer ` + sessionStorage.getItem('token'),
+        }
+      }).then()
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -363,48 +354,15 @@ export default function UMKMChat() {
   const handleSendFile = async (file) => {
     if (!selectedContact) return;
 
+    // AI Assistant doesn't support file uploads
+    if (selectedContact.id === AI_CHATBOT_ID) {
+      alert('❌ AI Assistant saat ini belum support pengiriman file');
+      return;
+    }
+
     try {
       // TODO: BACKEND - Upload file dan send message
-      // const formData = new FormData();
-      // formData.append('file', file);
-      // formData.append('receiverId', selectedContact.id);
-      // formData.append('messageType', file.type.startsWith('image/') ? 'image' : 'file');
-      // formData.append('sentAt', new Date().toISOString());
-
-      // const response = await fetch('/api/umkm/chat/send-file', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-      //   },
-      //   body: formData
-      // });
-      // const data = await response.json();
-
-      // EXPECTED REQUEST BODY (FormData):
-      // - file: File object
-      // - receiverId: "inv-001"
-      // - messageType: "file" atau "image"
-      // - sentAt: "2024-07-30T15:00:00Z"
-
-      // EXPECTED RESPONSE:
-      // {
-      //   success: true,
-      //   message: "File berhasil dikirim",
-      //   data: {
-      //     id: "msg-124",
-      //     fileUrl: "https://api.umkmverse.com/uploads/chat/xxx.pdf",
-      //     fileName: "document.pdf",
-      //     ... message data ...
-      //   }
-      // }
-
-      // DUMMY - Hapus setelah integrasi
       alert(`📎 File "${file.name}" akan dikirim (dummy - belum terintegrasi backend)`);
-
-      // ACTUAL IMPLEMENTATION - Uncomment setelah backend ready
-      // if (data.success) {
-      //   setMessages(prev => [...prev, data.data]);
-      // }
 
     } catch (error) {
       console.error('Error sending file:', error);
@@ -417,20 +375,11 @@ export default function UMKMChat() {
   // ========================================
   const markMessagesAsRead = async (contactId) => {
     try {
-      // TODO: BACKEND - Mark all unread messages as read
-      // await fetch(`/api/umkm/chat/mark-read/${contactId}`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-
       // Update local state
-      setContacts(prev => 
-        prev.map(contact => 
-          contact.id === contactId 
-            ? { ...contact, unreadCount: 0 } 
+      setContacts(prev =>
+        prev.map(contact =>
+          contact.id === contactId
+            ? { ...contact, unreadCount: 0 }
             : contact
         )
       );
@@ -440,55 +389,6 @@ export default function UMKMChat() {
     }
   };
 
-  // ========================================
-  // 🔵 BACKEND INTEGRATION POINT #7: REAL-TIME UPDATES
-  // ========================================
-  // TODO: BACKEND - Implementasi WebSocket atau Laravel Reverb untuk real-time
-  // useEffect(() => {
-  //   // Connect to WebSocket
-  //   const ws = new WebSocket('wss://api.umkmverse.com/ws');
-  //   
-  //   ws.onmessage = (event) => {
-  //     const data = JSON.parse(event.data);
-  //     
-  //     if (data.type === 'new_message') {
-  //       // Update messages jika chat sedang dibuka
-  //       if (selectedContact?.id === data.message.senderId) {
-  //         setMessages(prev => [...prev, data.message]);
-  //         markMessagesAsRead(data.message.senderId);
-  //       }
-  //       
-  //       // Update contacts list
-  //       setContacts(prev => 
-  //         prev.map(contact => 
-  //           contact.id === data.message.senderId
-  //             ? {
-  //                 ...contact,
-  //                 lastMessage: data.message.message,
-  //                 lastMessageTime: data.message.sentAt,
-  //                 unreadCount: selectedContact?.id === contact.id 
-  //                   ? contact.unreadCount 
-  //                   : contact.unreadCount + 1
-  //               }
-  //             : contact
-  //         )
-  //       );
-  //     }
-  //     
-  //     if (data.type === 'message_status_update') {
-  //       setMessages(prev =>
-  //         prev.map(msg =>
-  //           msg.id === data.messageId
-  //             ? { ...msg, status: data.status }
-  //             : msg
-  //         )
-  //       );
-  //     }
-  //   };
-  //   
-  //   return () => ws.close();
-  // }, [selectedContact]);
-
   // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -497,11 +397,11 @@ export default function UMKMChat() {
   // Filter contacts
   const filteredContacts = contacts.filter(contact => {
     if (selectedFilter !== 'all' && contact.role !== selectedFilter) return false;
-    
+
     if (searchQuery) {
       return contact.name.toLowerCase().includes(searchQuery.toLowerCase());
     }
-    
+
     return true;
   });
 
@@ -524,7 +424,8 @@ export default function UMKMChat() {
     const icons = {
       investor: <TrendingUp size={14} />,
       supplier: <Package size={14} />,
-      distributor: <Truck size={14} />
+      distributor: <Truck size={14} />,
+      ai: <Sparkles size={14} />
     };
     return icons[role];
   };
@@ -533,7 +434,8 @@ export default function UMKMChat() {
     const colors = {
       investor: 'bg-green-100 text-green-700',
       supplier: 'bg-orange-100 text-orange-700',
-      distributor: 'bg-purple-100 text-purple-700'
+      distributor: 'bg-purple-100 text-purple-700',
+      ai: 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700'
     };
     return colors[role];
   };
@@ -565,7 +467,7 @@ export default function UMKMChat() {
         {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
-          
+
           {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -582,6 +484,7 @@ export default function UMKMChat() {
           <div className="flex items-center space-x-2 overflow-x-auto pb-1">
             {[
               { id: 'all', label: 'Semua' },
+              { id: 'ai', label: '🤖 AI' },
               { id: 'investor', label: 'Investor' },
               { id: 'supplier', label: 'Supplier' },
               { id: 'distributor', label: 'Distributor' }
@@ -589,11 +492,10 @@ export default function UMKMChat() {
               <button
                 key={filter.id}
                 onClick={() => setSelectedFilter(filter.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                  selectedFilter === filter.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${selectedFilter === filter.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
                 {filter.label}
               </button>
@@ -614,18 +516,25 @@ export default function UMKMChat() {
                 key={contact.id}
                 onClick={() => {
                   setSelectedContact(contact);
-                  fetchMessages(contact.id);
+                  if (contact.id !== AI_CHATBOT_ID) {
+                    fetchMessagesData(contact.id);
+                  }
                 }}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-                  selectedContact?.id === contact.id ? 'bg-blue-50' : ''
-                }`}
+                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${selectedContact?.id === contact.id ? 'bg-blue-50' : ''
+                  }`}
               >
                 <div className="flex items-start space-x-3">
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                      {contact.name.charAt(0)}
-                    </div>
+                    {contact.role === 'ai' ? (
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white">
+                        <Bot size={24} />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        {contact.name.charAt(0)}
+                      </div>
+                    )}
                     {contact.isOnline && (
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                     )}
@@ -637,7 +546,7 @@ export default function UMKMChat() {
                       <h3 className="font-semibold text-gray-900 truncate text-sm">{contact.name}</h3>
                       <span className="text-xs text-gray-500">{formatTime(contact.lastMessageTime)}</span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 truncate flex-1">{contact.lastMessage}</p>
                       {contact.unreadCount > 0 && (
@@ -650,7 +559,7 @@ export default function UMKMChat() {
                     <div className="flex items-center space-x-1 mt-1">
                       <span className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-semibold ${getRoleColor(contact.role)}`}>
                         {getRoleIcon(contact.role)}
-                        <span className="capitalize">{contact.role}</span>
+                        <span className="capitalize">{contact.role === 'ai' ? 'AI Assistant' : contact.role}</span>
                       </span>
                     </div>
                   </div>
@@ -676,32 +585,52 @@ export default function UMKMChat() {
           <div className="p-4 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                  {selectedContact.name.charAt(0)}
-                </div>
+                {selectedContact.role === 'ai' ? (
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white">
+                    <Bot size={20} />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                    {selectedContact.name.charAt(0)}
+                  </div>
+                )}
                 {selectedContact.isOnline && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                 )}
               </div>
               <div>
-                <h3 className="font-bold text-gray-900">{selectedContact.name}</h3>
+                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                  {selectedContact.name}
+                  {selectedContact.role === 'ai' && (
+                    <span className="text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 py-0.5 rounded-full">
+                      Powered by Gemini
+                    </span>
+                  )}
+                </h3>
                 <p className="text-xs text-gray-500">
-                  {selectedContact.isOnline ? 'Online' : `Terakhir dilihat ${formatTime(selectedContact.lastSeen)}`}
+                  {selectedContact.role === 'ai' 
+                    ? '🤖 AI Assistant - Selalu Online' 
+                    : selectedContact.isOnline 
+                      ? 'Online' 
+                      : `Terakhir dilihat ${formatTime(selectedContact.lastSeen)}`
+                  }
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                <Phone size={20} className="text-gray-600" />
-              </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                <Video size={20} className="text-gray-600" />
-              </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                <MoreVertical size={20} className="text-gray-600" />
-              </button>
-            </div>
+            {selectedContact.role !== 'ai' && (
+              <div className="flex items-center space-x-2">
+                <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                  <Phone size={20} className="text-gray-600" />
+                </button>
+                <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                  <Video size={20} className="text-gray-600" />
+                </button>
+                <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                  <MoreVertical size={20} className="text-gray-600" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Messages Area */}
@@ -714,23 +643,23 @@ export default function UMKMChat() {
                 <div className={`max-w-[70%] ${message.isOwn ? 'order-2' : 'order-1'}`}>
                   {message.messageType === 'text' && (
                     <div
-                      className={`px-4 py-2 rounded-2xl ${
-                        message.isOwn
-                          ? 'bg-blue-600 text-white'
+                      className={`px-4 py-2 rounded-2xl ${message.isOwn
+                        ? 'bg-blue-600 text-white'
+                        : selectedContact.role === 'ai'
+                          ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-gray-900 border-2 border-blue-200'
                           : 'bg-white text-gray-900 border border-gray-200'
-                      }`}
+                        }`}
                     >
-                      <p className="text-sm">{message.message}</p>
+                      <p className="text-sm whitespace-pre-wrap">{message.message}</p>
                     </div>
                   )}
 
                   {message.messageType === 'file' && (
                     <div
-                      className={`px-4 py-3 rounded-2xl ${
-                        message.isOwn
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-900 border border-gray-200'
-                      }`}
+                      className={`px-4 py-3 rounded-2xl ${message.isOwn
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-900 border border-gray-200'
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
                         <File size={24} />
@@ -742,59 +671,76 @@ export default function UMKMChat() {
                     </div>
                   )}
 
-                  <div className={`flex items-center space-x-2 mt-1 text-xs text-gray-500 ${
-                    message.isOwn ? 'justify-end' : 'justify-start'
-                  }`}>
+                  <div className={`flex items-center space-x-2 mt-1 text-xs text-gray-500 ${message.isOwn ? 'justify-end' : 'justify-start'
+                    }`}>
                     <span>{formatTime(message.sentAt)}</span>
                     {message.isOwn && getMessageStatusIcon(message.status)}
                   </div>
                 </div>
               </div>
             ))}
+
+            {/* AI Typing Indicator */}
+            {isAiTyping && selectedContact.role === 'ai' && (
+              <div className="flex justify-start">
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 px-4 py-3 rounded-2xl">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
           {/* Message Input */}
           <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex items-center space-x-3">
-              {/* Attachment Button */}
-              <button
-                onClick={() => document.getElementById('fileInput').click()}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                title="Kirim file"
-              >
-                <Paperclip size={20} />
-              </button>
-              <input
-                type="file"
-                id="fileInput"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files[0]) {
-                    handleSendFile(e.target.files[0]);
-                  }
-                }}
-              />
+              {/* Attachment Button - Hidden for AI */}
+              {selectedContact.role !== 'ai' && (
+                <>
+                  <button
+                    onClick={() => document.getElementById('fileInput').click()}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                    title="Kirim file"
+                  >
+                    <Paperclip size={20} />
+                  </button>
+                  <input
+                    type="file"
+                    id="fileInput"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files[0]) {
+                        handleSendFile(e.target.files[0]);
+                      }
+                    }}
+                  />
 
-              {/* Image Button */}
-              <button
-                onClick={() => document.getElementById('imageInput').click()}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
-                title="Kirim gambar"
-              >
-                <ImageIcon size={20} />
-              </button>
-              <input
-                type="file"
-                id="imageInput"
-                className="hidden"
-                accept="image/*"
-                onChange={(e) => {
-                  if (e.target.files[0]) {
-                    handleSendFile(e.target.files[0]);
-                  }
-                }}
-              />
+                  {/* Image Button */}
+                  <button
+                    onClick={() => document.getElementById('imageInput').click()}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                    title="Kirim gambar"
+                  >
+                    <ImageIcon size={20} />
+                  </button>
+                  <input
+                    type="file"
+                    id="imageInput"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files[0]) {
+                        handleSendFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </>
+              )}
 
               {/* Message Input */}
               <input
@@ -807,19 +753,19 @@ export default function UMKMChat() {
                     handleSendMessage();
                   }
                 }}
-                placeholder="Ketik pesan..."
-                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={selectedContact.role === 'ai' ? 'Tanya apa saja ke AI Assistant...' : 'Ketik pesan...'}
+                disabled={isAiTyping}
+                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               />
 
               {/* Send Button */}
               <button
                 onClick={handleSendMessage}
-                disabled={!messageInput.trim()}
-                className={`p-3 rounded-xl transition ${
-                  messageInput.trim()
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                disabled={!messageInput.trim() || isAiTyping}
+                className={`p-3 rounded-xl transition ${messageInput.trim() && !isAiTyping
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
               >
                 <Send size={20} />
               </button>

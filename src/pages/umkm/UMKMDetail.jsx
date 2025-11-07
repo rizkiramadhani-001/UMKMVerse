@@ -35,6 +35,7 @@ export default function UMKMDetail() {
 
   const [umkmData, setUmkmData] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [product, setProducts] = useState([])
 
   useEffect(() => {
     // Get ID from params or query params
@@ -43,6 +44,7 @@ export default function UMKMDetail() {
     if (umkmId) {
       console.log('Fetching UMKM detail for ID:', umkmId);
       fetchUMKMDetail(umkmId);
+      fetchProducts(umkmId)
       loadDummyReviews();
     } else {
       setError('ID UMKM tidak valid');
@@ -50,6 +52,12 @@ export default function UMKMDetail() {
     }
   }, [id, searchParams]);
 
+
+  const fetchProducts = async (umkmId)  =>
+  {
+    const data = await axios.get(`http://127.0.0.1:8000/api/products/by-supplier/${umkmId}`)
+    setProducts(data.data.data)
+  }
   const fetchUMKMDetail = async (umkmId) => {
     setIsLoading(true);
     setError(null);
@@ -586,6 +594,59 @@ export default function UMKMDetail() {
                     )}
                   </div>
                 )}
+            {activeTab === 'products' && (
+  <div className="space-y-4">
+    {product.length === 0 ? (
+      <div className="text-center py-12">
+        <MessageSquare className="mx-auto text-gray-300 mb-4" size={48} />
+        <p className="text-gray-600">Belum ada produk</p>
+      </div>
+    ) : (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {product.map((product) => (
+          <div
+            key={product.id}
+            className="p-4 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300"
+          >
+            {/* Gambar produk */}
+            <div className="w-full h-40 bg-gray-100 rounded-xl overflow-hidden mb-3">
+              <img
+                src={
+                  product.images && product.images.length > 0
+                    ? `${STORAGE_BASE_URL}/${product.images[0]}`
+                    : 'https://via.placeholder.com/300x200?text=No+Image'
+                }
+                alt={product.name || 'Produk'}
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+
+            {/* Nama dan kategori */}
+            <h3 className="text-lg font-semibold text-gray-900">
+              {product.name || 'Produk tanpa nama'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-1">
+              {product.category?.name || 'Tanpa kategori'}
+            </p>
+
+            {/* Harga */}
+            <p className="text-blue-600 font-bold text-lg mb-2">
+              Rp {Number(product.price).toLocaleString('id-ID')}
+            </p>
+
+            {/* Deskripsi singkat */}
+            <p className="text-gray-700 text-sm line-clamp-2">
+              {typeof product.description === 'string'
+                ? product.description
+                : 'Tidak ada deskripsi.'}
+            </p>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
+
               </div>
             </div>
           </div>

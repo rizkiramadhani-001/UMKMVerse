@@ -15,6 +15,8 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\ProductController;
+
 // Public API Routes
 
 
@@ -67,6 +69,50 @@ Route::post('/distributor', [DistributorController::class, 'store'])->middleware
 
 Route::get('/signed-umkm', [ContractController::class, 'getAllUmkmFromSignedContractsByUser'])
     ->middleware('auth:sanctum');
+
+
+Route::get('/products/by-supplier/{supplier_id}', [ProductController::class, 'getBySupplier']);
+
+
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    
+    // Supplier Product Routes
+    Route::prefix('supplier')->group(function () {
+        
+        // Get categories for product form dropdown
+        Route::get('/categories', [ProductController::class, 'categories']);
+        
+        // Product CRUD
+        Route::prefix('products')->group(function () {
+            // Get all supplier's products (with filters)
+            Route::get('/', [ProductController::class, 'index']);
+            
+            // Create new product
+            Route::post('/', [ProductController::class, 'store']);
+            
+            // Get single product
+            Route::get('/{id}', [ProductController::class, 'show']);
+            
+            // Update product
+            Route::post('/{id}', [ProductController::class, 'update']); // POST for form-data with images
+            Route::put('/{id}', [ProductController::class, 'update']); // PUT for JSON
+            
+            // Delete product
+            Route::delete('/{id}', [ProductController::class, 'destroy']);
+            
+            // Update product status (active/inactive)
+            Route::patch('/{id}/status', [ProductController::class, 'updateStatus']);
+            
+            // Update product stock
+            Route::patch('/{id}/stock', [ProductController::class, 'updateStock']);
+            
+            // Get product statistics
+            Route::get('/stats/summary', [ProductController::class, 'statistics']);
+        });
+    });
+});
+
 
 
 
