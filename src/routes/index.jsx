@@ -267,7 +267,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'chat',
-        element: <UMKMChat />
+        element: <DistributorChat />
       },
       {
         path: 'settings',
@@ -316,7 +316,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'chat',
-        element: <UMKMChat />
+        element: <SupplierChat />
       },
       {
         path: 'product-form',
@@ -371,45 +371,45 @@ const router = createBrowserRouter([
   // ========================================
   // ADMIN DASHBOARD ROUTES
   // ========================================
-  // {
-  //   path: '/admin-dashboard',
-  //   element: <AdminLayout />,
-  //   children: [
-  //     {
-  //       index: true,
-  //       element: <AdminDashboard />
-  //     },
-  //     // TODO: Uncomment ketika pages sudah dibuat
-  //     {
-  //       path: 'users',
-  //       element: <AdminUsers />
-  //     },
-  //     {
-  //       path: 'umkm',
-  //       element: <AdminUMKM />
-  //     },
-  //     {
-  //       path: 'verification',
-  //       element: <AdminVerification />
-  //     },
-  //     {
-  //       path: 'transactions',
-  //       element: <AdminTransactions />
-  //     },
-  //     {
-  //       path: 'forum',
-  //       element: <AdminForum />
-  //     },
-  //     {
-  //       path: 'analytics',
-  //       element: <AdminAnalytics />
-  //     },
-  //     {
-  //       path: 'settings',
-  //       element: <AdminSettings />
-  //     }
-  //   ]
-  // }
+  {
+    path: '/admin-dashboard',
+    element: <AdminLayout />,
+    children: [
+      {
+        index: true,
+        element: <AdminDashboard />
+      },
+      // TODO: Uncomment ketika pages sudah dibuat
+      {
+        path: 'users',
+        element: <AdminUsers />
+      },
+      {
+        path: 'umkm',
+        element: <AdminUMKM />
+      },
+      {
+        path: 'verification',
+        element: <AdminVerification />
+      },
+      {
+        path: 'transactions',
+        element: <AdminTransactions />
+      },
+      {
+        path: 'forum',
+        element: <AdminForum />
+      },
+      {
+        path: 'analytics',
+        element: <AdminAnalytics />
+      },
+      {
+        path: 'settings',
+        element: <AdminSettings />
+      }
+    ]
+  }
 ]);
 
 export default router;
